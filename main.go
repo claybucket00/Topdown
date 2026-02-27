@@ -28,6 +28,6 @@ func main() {
 		log.Panicf("Failed to parse demo: %v", err)
 	}
 
-	rh.PrintRounds()
-
+	// rh.PrintRounds()
+	rh.PrintPlayerPositionsLength()
 }
