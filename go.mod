@@ -2,10 +2,11 @@ module topdown
 
 go 1.25.0
 
+require github.com/markus-wa/demoinfocs-golang/v5 v5.1.2
+
 require (
 	github.com/golang/geo v0.0.0-20260129164528-943061e2742c // indirect
 	github.com/golang/snappy v1.0.0 // indirect
-	github.com/markus-wa/demoinfocs-golang/v5 v5.1.2 // indirect
 	github.com/markus-wa/go-unassert v0.1.3 // indirect
 	github.com/markus-wa/gobitread v0.2.5-0.20241202000432-3c3e0bc797c6 // indirect
 	github.com/markus-wa/godispatch v1.4.1 // indirect
