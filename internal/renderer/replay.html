@@ -7,12 +7,35 @@
         <link rel="stylesheet" href="renderer.css">
     </head>
     <body>
-        <div class="canvas-container">
-            <canvas id="map"></canvas>
-        </div>"
-        <div class="t-loadouts">
-            <h3>Team Name</h3>
+        <div class="main-layout">
+            <!-- Left sidebar for CT equipment -->
+            <div class="sidebar sidebar-left">
+                <div class="team-header">CT</div>
+                <div class="players-container" id="ct-players"></div>
+            </div>
+
+            <!-- Center area with canvas -->
+            <div class="center-area">
+                <div class="canvas-container">
+                    <canvas id="map"></canvas>
+                </div>
+            </div>
+
+            <!-- Right sidebar for T equipment -->
+            <div class="sidebar sidebar-right">
+                <div class="team-header">T</div>
+                <div class="players-container" id="t-players"></div>
+            </div>
         </div>
+
+        <!-- Bottom replay bar -->
+        <div class="replay-bar">
+            <input type="range" id="replay-progress" class="progress-slider" min="0" max="100" value="0">
+            <div class="time-display">
+                <span id="current-time">0:00</span> / <span id="total-time">0:00</span>
+            </div>
+        </div>
+
         <script src="renderer.js"></script>
     </body>
 </html>

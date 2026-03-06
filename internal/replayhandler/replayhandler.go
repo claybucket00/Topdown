@@ -1,6 +1,7 @@
 package replayhandler
 
 import (
+	framedata "topdown/internal/frames"
 	playerposition "topdown/internal/playerposition"
 	round "topdown/internal/round"
 
@@ -14,25 +15,28 @@ import (
 var FIRST_PLAYER *common.Player
 
 type ReplayHandler struct {
-	parser       demoinfocs.Parser
-	Rounds       []round.Round
-	currentRound *round.Round
-	MapName      string
-	TickRate     float64
-	prevTick     int
+	parser demoinfocs.Parser
+	Rounds []round.Round
+	// currentRound *round.Round
+	Frames   map[int]*framedata.FrameData // Key: Tick, Val: FrameData for that tick
+	MapName  string
+	TickRate float64
+	prevTick int
 }
 
 func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 	rh := &ReplayHandler{
 		parser:   parser,
 		Rounds:   make([]round.Round, 0),
+		Frames:   make(map[int]*framedata.FrameData),
 		prevTick: 0.0,
 	}
 
 	parser.RegisterNetMessageHandler(rh.getMapName)
 	parser.RegisterEventHandler(rh.onRoundStart)
 	parser.RegisterEventHandler(rh.onRoundEnd)
-	parser.RegisterEventHandler(rh.onTickDone)
+	parser.RegisterEventHandler(rh.onTickDone)                   // Player positions
+	parser.RegisterEventHandler(rh.onGrenadeProjectileDestroyed) // Grenade positions
 
 	return rh
 }
@@ -42,31 +46,33 @@ func (rh *ReplayHandler) getMapName(msg *msg.CSVCMsg_ServerInfo) {
 	rh.TickRate = rh.parser.TickRate()
 }
 
-// func (rh *ReplayHandler) tickRateAvailable(tickRateInfoAvailable event.TickRateInfoAvailable) {
-// 	rh.TickRate = rh.parser.TickRate()
-// }
-
 func (rh *ReplayHandler) onRoundStart(roundStart event.RoundStart) {
 	if rh.parser.GameState().IsWarmupPeriod() {
 		return
 	}
-	rh.currentRound = &round.Round{
-		Number:          rh.parser.GameState().TotalRoundsPlayed() + 1,
-		StartTick:       rh.parser.GameState().IngameTick(),
-		PlayerPositions: make(map[int][]playerposition.PlayerPosition),
+
+	newRound := round.Round{
+		StartTick: rh.parser.GameState().IngameTick(),
 	}
+	rh.Rounds = append(rh.Rounds, newRound)
+	// rh.currentRound = &round.Round{
+	// 	Number:    rh.parser.GameState().TotalRoundsPlayed() + 1,
+	// 	StartTick: rh.parser.GameState().IngameTick(),
+	// 	// PlayerPositions: make(map[int][]playerposition.PlayerPosition),
+	// }
 }
 
 func (rh *ReplayHandler) onRoundEnd(roundEnd event.RoundEnd) {
 	if rh.parser.GameState().IsWarmupPeriod() {
 		return
 	}
-	if rh.currentRound == nil {
-		return
-	}
-	rh.currentRound.EndTick = rh.parser.GameState().IngameTick()
-	rh.Rounds = append(rh.Rounds, *rh.currentRound)
-	rh.currentRound = nil
+	rh.Rounds[len(rh.Rounds)-1].EndTick = rh.parser.GameState().IngameTick()
+	// if rh.currentRound == nil {
+	// 	return
+	// }
+	// rh.currentRound.EndTick = rh.parser.GameState().IngameTick()
+	// rh.Rounds = append(rh.Rounds, *rh.currentRound)
+	// rh.currentRound = nil
 }
 
 func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
@@ -78,43 +84,70 @@ func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
 	rh.prevTick = tick
 
 	// Only track first round for now
-	if rh.currentRound == nil || rh.currentRound.Number != 1 {
+	if len(rh.Rounds) > 1 {
 		return
 	}
 
 	// TODO: Track all players
 	if FIRST_PLAYER == nil {
 		players := rh.parser.GameState().Participants().Playing()
-		FIRST_PLAYER = players[0]
+		if len(players) > 0 {
+			FIRST_PLAYER = players[0]
+		} else {
+			return // No players to track
+		}
 	}
 	players := rh.parser.GameState().Participants().ByUserID()
-	firstPlayer := players[FIRST_PLAYER.UserID]
+	firstPlayer, exists := players[FIRST_PLAYER.UserID]
+	if !exists {
+		return // Player no longer exists
+	}
 
-	rh.currentRound.PlayerPositions[firstPlayer.UserID] = append(rh.currentRound.PlayerPositions[firstPlayer.UserID], playerposition.PlayerPosition{
-		Tick: tick,
-		X:    firstPlayer.Position().X,
-		Y:    firstPlayer.Position().Y,
-	})
+	// rh.currentRound.PlayerPositions[firstPlayer.UserID] = append(rh.currentRound.PlayerPositions[firstPlayer.UserID], playerposition.PlayerPosition{
+	// 	X: firstPlayer.Position().X,
+	// 	Y: firstPlayer.Position().Y,
+	// })
+	// log.Printf("Tick: %d", tick)
+	// rh.currentRound.FrameDatum[tick-rh.currentRound.StartTick].PlayerPositions[firstPlayer.UserID] = playerposition.PlayerPosition{
+	// 	X: firstPlayer.Position().X,
+	// 	Y: firstPlayer.Position().Y,
+	// }
+	rh.Frames[tick].PlayerPositions[firstPlayer.UserID] = playerposition.PlayerPosition{
+		X: firstPlayer.Position().X,
+		Y: firstPlayer.Position().Y,
+	}
 
 }
 
 func (rh *ReplayHandler) onGrenadeProjectileDestroyed(grenadeDestroyed event.GrenadeProjectileDestroy) {
-
-}
-
-func (rh *ReplayHandler) PrintRounds() {
-	for _, r := range rh.Rounds {
-		println("Round", r.Number, "started at tick", r.StartTick, "and ended at tick", r.EndTick)
-	}
-}
-
-func (rh *ReplayHandler) PrintPlayerPositionsLength() {
-	if len(rh.Rounds[0].PlayerPositions) == 0 {
-		println("No player positions recorded for round 1")
+	// Only track first round for now
+	if len(rh.Rounds) > 1 {
 		return
 	}
-	for playerID, positions := range rh.Rounds[0].PlayerPositions {
-		println("Player ID:", playerID, "Positions Length:", len(positions))
-	}
+	// In theory, onTickEnd event should have already been called and created an entry in FrameDatum for the current tick
+	grenadeProjectile := grenadeDestroyed.Projectile
 
+	for _, trajectoryEntry := range grenadeProjectile.Trajectory {
+		rh.Frames[trajectoryEntry.Tick].NadePositions[grenadeProjectile.UniqueID()] = playerposition.NadePosition{
+			X: trajectoryEntry.Position.X,
+			Y: trajectoryEntry.Position.Y,
+		}
+	}
 }
+
+// func (rh *ReplayHandler) PrintRounds() {
+// 	for _, r := range rh.Rounds {
+// 		println("Round", r.Number, "started at tick", r.StartTick, "and ended at tick", r.EndTick)
+// 	}
+// }
+
+// func (rh *ReplayHandler) PrintPlayerPositionsLength() {
+// 	if len(rh.Rounds[0].PlayerPositions) == 0 {
+// 		println("No player positions recorded for round 1")
+// 		return
+// 	}
+// 	for playerID, positions := range rh.Rounds[0].PlayerPositions {
+// 		println("Player ID:", playerID, "Positions Length:", len(positions))
+// 	}
+
+// }

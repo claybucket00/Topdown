@@ -7,9 +7,18 @@ import (
 )
 
 type PlayerPosition struct {
-	Tick int     `json:"tick"`
-	X    float64 `json:"x"`
-	Y    float64 `json:"y"`
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
+type NadePosition struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
+type FrameData struct {
+	PlayerPositions map[int]PlayerPosition `json:"player_positions"` // Key: playerID, Val: PlayerPosition for that tick
+	NadePositions   map[int64]NadePosition `json:"nade_positions"`   // Key: nadeID, Val: NadePosition for that tick
 }
 
 type SerializedRound struct {
@@ -18,7 +27,8 @@ type SerializedRound struct {
 	EndTick   int `json:"end_tick"`
 
 	// PlayerPositions is a map where the key is the UserID and the value is a list of PlayerPosition during the round.
-	PlayerPositions map[int][]PlayerPosition `json:"player_positions"`
+	// PlayerPositions map[int][]PlayerPosition `json:"player_positions"`
+	FrameDatum []FrameData `json:"frame_data"` // Index: Tick, Val: FrameData for that tick
 }
 
 type Replay struct {
@@ -41,22 +51,31 @@ func SerializeReplay(replay *replayhandler.ReplayHandler, path string) error {
 
 	for _, round := range replay.Rounds {
 		serializedRound := SerializedRound{
-			Number:          round.Number,
-			StartTick:       round.StartTick,
-			EndTick:         round.EndTick,
-			PlayerPositions: map[int][]PlayerPosition{},
+			Number:     round.Number,
+			StartTick:  round.StartTick,
+			EndTick:    round.EndTick,
+			FrameDatum: []FrameData{},
 		}
 
-		for playerID, playerPositions := range round.PlayerPositions {
-			serializedPlayerPositions := []PlayerPosition{}
-			for _, position := range playerPositions {
-				serializedPlayerPositions = append(serializedPlayerPositions, PlayerPosition{
-					Tick: position.Tick,
-					X:    position.X,
-					Y:    position.Y,
-				})
+		for _, frameData := range round.FrameDatum {
+			newPlayerPositions := make(map[int]PlayerPosition)
+			newNadePositions := make(map[int64]NadePosition)
+			for playerID, pos := range frameData.PlayerPositions {
+				newPlayerPositions[playerID] = PlayerPosition{
+					X: pos.X,
+					Y: pos.Y,
+				}
 			}
-			serializedRound.PlayerPositions[playerID] = serializedPlayerPositions
+			for nadeID, pos := range frameData.NadePositions {
+				newNadePositions[nadeID] = NadePosition{
+					X: pos.X,
+					Y: pos.Y,
+				}
+			}
+			serializedRound.FrameDatum = append(serializedRound.FrameDatum, FrameData{
+				PlayerPositions: newPlayerPositions,
+				NadePositions:   newNadePositions,
+			})
 		}
 
 		serializedReplay.Rounds = append(serializedReplay.Rounds, serializedRound)

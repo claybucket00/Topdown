@@ -10,8 +10,12 @@ type NadePath struct {
 	thrownBy int // UserID of the player who threw the nade
 }
 
+type NadePosition struct {
+	X float64
+	Y float64
+}
+
 type PlayerPosition struct {
-	Tick int
-	X    float64
-	Y    float64
+	X float64
+	Y float64
 }
