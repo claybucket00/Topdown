@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"os"
-	"topdown/internal/replayhandler"
+	"topdown/internal/replay"
 	"topdown/internal/serialization"
 
 	demoinfocs "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs"
@@ -24,7 +24,7 @@ func main() {
 	p := demoinfocs.NewParser(f)
 	defer p.Close()
 
-	rh := replayhandler.NewReplayHandler(p)
+	rh := replay.NewReplayHandler(p)
 
 	err = p.ParseToEnd()
 	if err != nil {
@@ -33,7 +33,9 @@ func main() {
 
 	// rh.PrintRounds()
 	// rh.PrintPlayerPositionsLength()
-	err = serialization.SerializeReplay(rh, "output.json")
+	// rh.PrintNadePositions()
+	replay := rh.GenerateReplay()
+	err = serialization.SerializeReplay(&replay, "output.json")
 	if err != nil {
 		log.Panicf("Failed to serialize replay: %v", err)
 	}

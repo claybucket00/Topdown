@@ -1,7 +1,8 @@
-package replayhandler
+package replay
 
 import (
 	framedata "topdown/internal/frames"
+	metadata "topdown/internal/metadata"
 	playerposition "topdown/internal/playerposition"
 	round "topdown/internal/round"
 
@@ -15,21 +16,26 @@ import (
 var FIRST_PLAYER *common.Player
 
 type ReplayHandler struct {
-	parser demoinfocs.Parser
-	Rounds []round.Round
-	// currentRound *round.Round
-	Frames   map[int]*framedata.FrameData // Key: Tick, Val: FrameData for that tick
-	MapName  string
-	TickRate float64
-	prevTick int
+	parser         demoinfocs.Parser
+	Rounds         []round.Round
+	currentRound   *round.Round
+	Frames         map[int]*framedata.FrameData // Key: Tick, Val: FrameData for that tick
+	MapName        string
+	TickRate       float64
+	prevTick       int
+	mapMetdata     metadata.MapMetadata
+	PlayerMetadata map[int]metadata.PlayerMetadata // Key: playerId, Val: PlayerMetadata
+	NadeMetadata   map[int64]metadata.NadeMetadata // Key: nadeId, Val: NadeMetadata
 }
 
 func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 	rh := &ReplayHandler{
-		parser:   parser,
-		Rounds:   make([]round.Round, 0),
-		Frames:   make(map[int]*framedata.FrameData),
-		prevTick: 0.0,
+		parser:         parser,
+		Rounds:         []round.Round{},
+		Frames:         make(map[int]*framedata.FrameData),
+		PlayerMetadata: make(map[int]metadata.PlayerMetadata),
+		NadeMetadata:   make(map[int64]metadata.NadeMetadata),
+		prevTick:       0.0,
 	}
 
 	parser.RegisterNetMessageHandler(rh.getMapName)
@@ -44,6 +50,20 @@ func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 func (rh *ReplayHandler) getMapName(msg *msg.CSVCMsg_ServerInfo) {
 	rh.MapName = msg.GetMapName()
 	rh.TickRate = rh.parser.TickRate()
+
+	rh.mapMetdata = metadata.GetMapMetadata(rh.MapName)
+}
+
+func (rh *ReplayHandler) getFrame(tick int) *framedata.FrameData {
+	frame, ok := rh.Frames[tick]
+	if !ok {
+		frame = &framedata.FrameData{
+			PlayerPositions: make(map[int]playerposition.PlayerPosition),
+			NadePositions:   make(map[int64]playerposition.NadePosition),
+		}
+		rh.Frames[tick] = frame
+	}
+	return frame
 }
 
 func (rh *ReplayHandler) onRoundStart(roundStart event.RoundStart) {
@@ -51,25 +71,26 @@ func (rh *ReplayHandler) onRoundStart(roundStart event.RoundStart) {
 		return
 	}
 
-	newRound := round.Round{
+	rh.currentRound = &round.Round{
 		StartTick: rh.parser.GameState().IngameTick(),
+		// PlayerPositions: make(map[int][]playerposition.PlayerPosition),
 	}
-	rh.Rounds = append(rh.Rounds, newRound)
-	// rh.currentRound = &round.Round{
-	// 	Number:    rh.parser.GameState().TotalRoundsPlayed() + 1,
-	// 	StartTick: rh.parser.GameState().IngameTick(),
-	// 	// PlayerPositions: make(map[int][]playerposition.PlayerPosition),
-	// }
 }
 
 func (rh *ReplayHandler) onRoundEnd(roundEnd event.RoundEnd) {
 	if rh.parser.GameState().IsWarmupPeriod() {
 		return
 	}
-	rh.Rounds[len(rh.Rounds)-1].EndTick = rh.parser.GameState().IngameTick()
-	// if rh.currentRound == nil {
-	// 	return
-	// }
+	if rh.currentRound == nil {
+		return
+	}
+	rh.currentRound.EndTick = rh.parser.GameState().IngameTick()
+	if rh.currentRound.StartTick == rh.currentRound.EndTick {
+		return // Skip rounds that start and end on the same tick
+	}
+	rh.Rounds = append(rh.Rounds, *rh.currentRound)
+	rh.currentRound = nil
+
 	// rh.currentRound.EndTick = rh.parser.GameState().IngameTick()
 	// rh.Rounds = append(rh.Rounds, *rh.currentRound)
 	// rh.currentRound = nil
@@ -96,6 +117,11 @@ func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
 		} else {
 			return // No players to track
 		}
+		for _, player := range players {
+			rh.PlayerMetadata[player.UserID] = metadata.PlayerMetadata{
+				Name: player.Name,
+			}
+		}
 	}
 	players := rh.parser.GameState().Participants().ByUserID()
 	firstPlayer, exists := players[FIRST_PLAYER.UserID]
@@ -112,9 +138,12 @@ func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
 	// 	X: firstPlayer.Position().X,
 	// 	Y: firstPlayer.Position().Y,
 	// }
-	rh.Frames[tick].PlayerPositions[firstPlayer.UserID] = playerposition.PlayerPosition{
-		X: firstPlayer.Position().X,
-		Y: firstPlayer.Position().Y,
+
+	frame := rh.getFrame(tick)
+	radarX, radarY := rh.mapMetdata.WorldToRadarCoords(firstPlayer.Position().X, firstPlayer.Position().Y)
+	frame.PlayerPositions[firstPlayer.UserID] = playerposition.PlayerPosition{
+		X: radarX,
+		Y: radarY,
 	}
 
 }
@@ -124,14 +153,32 @@ func (rh *ReplayHandler) onGrenadeProjectileDestroyed(grenadeDestroyed event.Gre
 	if len(rh.Rounds) > 1 {
 		return
 	}
-	// In theory, onTickEnd event should have already been called and created an entry in FrameDatum for the current tick
 	grenadeProjectile := grenadeDestroyed.Projectile
+	rh.NadeMetadata[grenadeProjectile.UniqueID()] = metadata.NadeMetadata{
+		Type:    grenadeProjectile.WeaponInstance.String(),
+		Thrower: grenadeProjectile.Thrower.UserID,
+	}
 
 	for _, trajectoryEntry := range grenadeProjectile.Trajectory {
-		rh.Frames[trajectoryEntry.Tick].NadePositions[grenadeProjectile.UniqueID()] = playerposition.NadePosition{
+		frame := rh.getFrame(trajectoryEntry.Tick)
+		frame.NadePositions[grenadeProjectile.UniqueID()] = playerposition.NadePosition{
 			X: trajectoryEntry.Position.X,
 			Y: trajectoryEntry.Position.Y,
 		}
+	}
+}
+
+func (rh *ReplayHandler) PrintNadePositions() {
+	for i, round := range rh.Rounds {
+		println("Round", i+1, "nade positions:")
+		nadePositionsLengths := 0
+		for tick := round.StartTick; tick <= round.EndTick; tick++ {
+			frameData, exists := rh.Frames[tick]
+			if exists {
+				nadePositionsLengths += len(frameData.NadePositions)
+			}
+		}
+		println("Nade positions recorded:", nadePositionsLengths)
 	}
 }
 

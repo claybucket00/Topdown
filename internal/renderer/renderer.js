@@ -69,15 +69,36 @@ async function init() {
     canvas.width = mapImg.width;
     canvas.height = mapImg.height;
 
-    positions = replayData.rounds[0].player_positions["7"]; // TODO: Make player ID dynamic
-    canvasPositions = positions.map(pos => processPlayerPositions(pos.x, pos.y, canvas, mapImg));
+    const tickRate = replayData.tick_rate;
+    const tickDuration = 1000 / tickRate; // ms
 
-    let currentIndex = 0;
+    //positions = replayData.rounds[0].player_positions["7"]; // TODO: Make player ID dynamic
+    // canvasPositions = positions.map(pos => processPlayerPositions(pos.x, pos.y, canvas, mapImg));
+    positions = replayData.rounds[1]
+    
+    let currentTick = 0;
+    let accumulator = 0;
+    let lastTime = performance.now();
     function animatePlayer() {
-        if (currentIndex >= canvasPositions.length) {
+        // if (currentIndex >= canvasPositions.length) {
+        //     return;
+        // }
+        //const pos = canvasPositions[currentIndex];
+        if (currentTick >= positions.length) {
             return;
         }
-        const pos = canvasPositions[currentIndex];
+        // const delta = now - lastTime;
+        // lastTime = now;
+        // accumulator += delta;
+        // while (accumulator >= tickDuration) {
+        //     accumulator -= tickDuration;
+        //     currentTick++;
+        //     if (currentTick >= positions.length) {
+        //         return;
+        //     }
+        // }
+        const rawPos = positions[currentTick].player_positions["6"]
+        const pos = radarToCanvas(rawPos.x, rawPos.y, canvas, mapImg);
         
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(mapImg, 0, 0, canvas.width, canvas.height);
@@ -85,8 +106,8 @@ async function init() {
         ctx.arc(pos.x, pos.y, 5, 0, 2 * Math.PI, false);
         ctx.fillStyle = "red";
         ctx.fill();
+        currentTick++;
 
-        currentIndex++;
         requestAnimationFrame(animatePlayer);
     }
 

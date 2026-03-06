@@ -2,7 +2,10 @@ module topdown
 
 go 1.25.0
 
-require github.com/markus-wa/demoinfocs-golang/v5 v5.1.2
+require (
+	github.com/andygrunwald/vdf v1.1.0
+	github.com/markus-wa/demoinfocs-golang/v5 v5.1.2
+)
 
 require (
 	github.com/golang/geo v0.0.0-20260129164528-943061e2742c // indirect
