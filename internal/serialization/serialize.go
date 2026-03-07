@@ -69,6 +69,7 @@ func SerializeReplay(replay *replay.Replay, path string) error {
 			}
 
 			for nadeID, pos := range frameData.NadePositions {
+				println("Serialized data for:", nadeID)
 				newNadePositions[nadeID] = NadePosition{
 					X: pos.X,
 					Y: pos.Y,

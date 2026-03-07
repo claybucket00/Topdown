@@ -1,7 +1,7 @@
 package replay
 
 import (
-	"topdown/internal/frames"
+	frames "topdown/internal/frames"
 	metadata "topdown/internal/metadata"
 )
 
@@ -41,4 +41,14 @@ func (rh *ReplayHandler) GenerateReplay() Replay {
 		replay.Rounds[i] = roundFrames
 	}
 	return replay
+}
+
+func (r *Replay) PrintNadeData() {
+	for roundIndex, round := range r.Rounds {
+		nadeData := 0
+		for _, frameData := range round {
+			nadeData += len(frameData.NadePositions)
+		}
+		println("Round", roundIndex, "Nade data:", nadeData)
+	}
 }

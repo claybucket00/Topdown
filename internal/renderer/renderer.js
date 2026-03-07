@@ -97,15 +97,27 @@ async function init() {
         //         return;
         //     }
         // }
-        const rawPos = positions[currentTick].player_positions["6"]
-        const pos = radarToCanvas(rawPos.x, rawPos.y, canvas, mapImg);
+        for (const playerPos of Object.values(positions[currentTick].player_positions)) {
+            const playerCanvasPos = radarToCanvas(playerPos.x, playerPos.y, canvas, mapImg);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(mapImg, 0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.arc(playerCanvasPos.x, playerCanvasPos.y, 5, 0, 2 * Math.PI, false);
+            ctx.fillStyle = "red";
+            ctx.fill();
+        }
+
+        for (const nadePos of Object.values(positions[currentTick].nade_positions)) {
+            const nadeCanvasPos = radarToCanvas(nadePos.x, nadePos.y, canvas, mapImg);
+
+            ctx.beginPath();
+            ctx.arc(nadeCanvasPos.x, nadeCanvasPos.y, 5, 0, 2 * Math.PI, false);
+            ctx.fillStyle = "blue";
+            ctx.fill();
+            return; // TODO: Testing - only draw one nade per tick for now
+        }       
         
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(mapImg, 0, 0, canvas.width, canvas.height);
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 5, 0, 2 * Math.PI, false);
-        ctx.fillStyle = "red";
-        ctx.fill();
+        
         currentTick++;
 
         requestAnimationFrame(animatePlayer);

@@ -161,9 +161,10 @@ func (rh *ReplayHandler) onGrenadeProjectileDestroyed(grenadeDestroyed event.Gre
 
 	for _, trajectoryEntry := range grenadeProjectile.Trajectory {
 		frame := rh.getFrame(trajectoryEntry.Tick)
+		radarX, radarY := rh.mapMetdata.WorldToRadarCoords(trajectoryEntry.Position.X, trajectoryEntry.Position.Y)
 		frame.NadePositions[grenadeProjectile.UniqueID()] = playerposition.NadePosition{
-			X: trajectoryEntry.Position.X,
-			Y: trajectoryEntry.Position.Y,
+			X: radarX,
+			Y: radarY,
 		}
 	}
 }
