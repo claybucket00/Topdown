@@ -69,56 +69,80 @@ async function init() {
     canvas.width = mapImg.width;
     canvas.height = mapImg.height;
 
-    const tickRate = replayData.tick_rate;
+    const tickRate = replayData.tickRate;
     const tickDuration = 1000 / tickRate; // ms
 
     //positions = replayData.rounds[0].player_positions["7"]; // TODO: Make player ID dynamic
     // canvasPositions = positions.map(pos => processPlayerPositions(pos.x, pos.y, canvas, mapImg));
     positions = replayData.rounds[1]
     
+    // Build nade trajectories for interpolation
+    const nadeTrajectories = {};
+    for (let tick = 0; tick < positions.length; tick++) {
+        for (const [nadeId, pos] of Object.entries(positions[tick].nade_positions)) {
+            if (!nadeTrajectories[nadeId]) {
+                nadeTrajectories[nadeId] = [];
+            }
+            nadeTrajectories[nadeId].push({tick, x: pos.x, y: pos.y});
+        }
+    }
+
+    // Function to interpolate nade position at a given tick
+    function interpolatePosition(trajectory, tick) {
+        if (trajectory.length === 0) return null;
+        if (tick < trajectory[0].tick || tick > trajectory[trajectory.length - 1].tick) return null;
+        
+        for (let i = 0; i < trajectory.length - 1; i++) {
+            if (tick >= trajectory[i].tick && tick <= trajectory[i + 1].tick) {
+                const t = (tick - trajectory[i].tick) / (trajectory[i + 1].tick - trajectory[i].tick);
+                return {
+                    x: trajectory[i].x + t * (trajectory[i + 1].x - trajectory[i].x),
+                    y: trajectory[i].y + t * (trajectory[i + 1].y - trajectory[i].y)
+                };
+            }
+        }
+        return null;
+    }
+    
     let currentTick = 0;
     let accumulator = 0;
     let lastTime = performance.now();
-    function animatePlayer() {
-        // if (currentIndex >= canvasPositions.length) {
-        //     return;
-        // }
-        //const pos = canvasPositions[currentIndex];
+    function animatePlayer(now) {
         if (currentTick >= positions.length) {
             return;
         }
-        // const delta = now - lastTime;
-        // lastTime = now;
-        // accumulator += delta;
-        // while (accumulator >= tickDuration) {
-        //     accumulator -= tickDuration;
-        //     currentTick++;
-        //     if (currentTick >= positions.length) {
-        //         return;
-        //     }
-        // }
+        const delta = now - lastTime;
+        lastTime = now;
+        accumulator += delta;
+        while (accumulator >= tickDuration) {
+            accumulator -= tickDuration;
+            currentTick++;
+            if (currentTick >= positions.length) {
+                return;
+            }
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(mapImg, 0, 0, canvas.width, canvas.height);
+
         for (const playerPos of Object.values(positions[currentTick].player_positions)) {
             const playerCanvasPos = radarToCanvas(playerPos.x, playerPos.y, canvas, mapImg);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(mapImg, 0, 0, canvas.width, canvas.height);
             ctx.beginPath();
             ctx.arc(playerCanvasPos.x, playerCanvasPos.y, 5, 0, 2 * Math.PI, false);
             ctx.fillStyle = "red";
             ctx.fill();
         }
 
-        for (const nadePos of Object.values(positions[currentTick].nade_positions)) {
-            const nadeCanvasPos = radarToCanvas(nadePos.x, nadePos.y, canvas, mapImg);
-
-            ctx.beginPath();
-            ctx.arc(nadeCanvasPos.x, nadeCanvasPos.y, 5, 0, 2 * Math.PI, false);
-            ctx.fillStyle = "blue";
-            ctx.fill();
-            return; // TODO: Testing - only draw one nade per tick for now
-        }       
-        
-        
-        currentTick++;
+        // Draw interpolated nade positions
+        for (const nadeId in nadeTrajectories) {
+            const pos = interpolatePosition(nadeTrajectories[nadeId], currentTick);
+            if (pos) {
+                const nadeCanvasPos = radarToCanvas(pos.x, pos.y, canvas, mapImg);
+                ctx.beginPath();
+                ctx.arc(nadeCanvasPos.x, nadeCanvasPos.y, 5, 0, 2 * Math.PI, false);
+                ctx.fillStyle = "blue";
+                ctx.fill();
+            }
+        }
 
         requestAnimationFrame(animatePlayer);
     }

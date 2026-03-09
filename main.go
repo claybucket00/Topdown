@@ -10,9 +10,9 @@ import (
 )
 
 // https://www.hltv.org/matches/2382614/spirit-vs-mouz-blasttv-austin-major-2025
-// var DEMO_PATH = "./demos/spirit-vs-mouz-m1-mirage.dem"
+var DEMO_PATH = "./demos/spirit-vs-mouz-m1-mirage.dem"
 
-var DEMO_PATH = "./demos/furia-vs-vitality-m1-mirage.dem"
+// var DEMO_PATH = "./demos/furia-vs-vitality-m1-mirage.dem"
 
 func main() {
 	f, err := os.Open(DEMO_PATH)
@@ -36,7 +36,7 @@ func main() {
 	// rh.PrintNadePositions()
 	replay := rh.GenerateReplay()
 	// replay.PrintNadeData()
-	err = serialization.SerializeReplay(&replay, "output.json")
+	err = serialization.SerializeReplay(&replay, "./internal/renderer/output.json")
 	if err != nil {
 		log.Panicf("Failed to serialize replay: %v", err)
 	}
