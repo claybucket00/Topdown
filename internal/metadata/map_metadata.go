@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/andygrunwald/vdf"
+	vdf "github.com/andygrunwald/vdf"
 )
 
 type MapMetadata struct {

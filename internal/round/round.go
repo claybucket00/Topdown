@@ -1,9 +1,15 @@
 package round
 
+import common "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
+
+type Score struct {
+	CT int `json:"ct"`
+	T  int `json:"t"`
+}
+
 type Round struct {
-	StartTick int
-	EndTick   int
-	// FrameDatum []FrameData // Index: Tick, Val: FrameData for that tick
-	// PlayerPositions map[int][]playerposition.PlayerPosition // Key: UserID, Val: List of positions during the round
-	// NadePaths       map[int][]playerposition.NadePath       // Key: nadeID, Val: List of nade positions
+	StartTick   int
+	EndTick     int
+	Score       Score
+	PlayerTeams map[int]common.Team // Key: playerId, Val: team the player started the round on
 }

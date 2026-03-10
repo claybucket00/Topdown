@@ -9,6 +9,7 @@ import (
 	round "topdown/internal/round"
 
 	demoinfocs "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs"
+	common "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	event "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
 	msg "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/msg"
 	ulid "github.com/oklog/ulid/v2"
@@ -25,7 +26,7 @@ type ReplayHandler struct {
 	prevTick       int
 	mapMetdata     metadata.MapMetadata
 	PlayerMetadata map[int]metadata.PlayerMetadata     // Key: playerId, Val: PlayerMetadata
-	NadeMetadata   map[ulid.ULID]metadata.NadeMetadata // TESTING ULID instead of UniqueID()
+	NadeMetadata   map[ulid.ULID]metadata.NadeMetadata // TESTING: ULID instead of UniqueID()
 	// NadeMetadata   map[int64]metadata.NadeMetadata // Key: nadeId, Val: NadeMetadata
 	// EntityIDToNadeID map[int]int64                   // Key: EntityID, Val: NadeID (UniqueID from onGrenadeProjectileDestroyed). Needed because GrenadeEvents do not generate a unique ID
 }
@@ -46,6 +47,8 @@ func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 	parser.RegisterEventHandler(rh.onRoundEnd)
 	parser.RegisterEventHandler(rh.onTickDone)                   // Player positions
 	parser.RegisterEventHandler(rh.onGrenadeProjectileDestroyed) // Grenade positions
+	parser.RegisterEventHandler(rh.onSmokeStart)                 // Smoke start events
+	parser.RegisterEventHandler(rh.onSmokeEnd)                   // Smoke end events
 
 	return rh
 }
@@ -62,7 +65,7 @@ func (rh *ReplayHandler) getFrame(tick int) *framedata.FrameData {
 	if !ok {
 		frame = &framedata.FrameData{
 			PlayerPositions: make(map[int]playerposition.PlayerPosition),
-			NadePositions:   make(map[int64]playerposition.NadePosition),
+			NadePositions:   make(map[ulid.ULID]playerposition.NadePosition),
 		}
 		rh.Frames[tick] = frame
 	}
@@ -76,8 +79,13 @@ func (rh *ReplayHandler) onRoundStart(roundStart event.RoundStart) {
 
 	rh.currentRound = &round.Round{
 		StartTick: rh.parser.GameState().IngameTick(),
-		// PlayerPositions: make(map[int][]playerposition.PlayerPosition),
 	}
+	players := rh.parser.GameState().Participants().Playing()
+	rh.currentRound.PlayerTeams = make(map[int]common.Team)
+	for _, player := range players {
+		rh.currentRound.PlayerTeams[player.UserID] = player.Team
+	}
+
 }
 
 func (rh *ReplayHandler) onRoundEnd(roundEnd event.RoundEnd) {
@@ -90,6 +98,16 @@ func (rh *ReplayHandler) onRoundEnd(roundEnd event.RoundEnd) {
 	rh.currentRound.EndTick = rh.parser.GameState().IngameTick()
 	if rh.currentRound.StartTick == rh.currentRound.EndTick {
 		return // Skip rounds that start and end on the same tick
+	}
+
+	// Set round score on round end as round start event does not expose score information
+	winner := roundEnd.Winner
+	if winner == common.TeamTerrorists {
+		rh.currentRound.Score.T = roundEnd.WinnerState.Score()
+		rh.currentRound.Score.CT = roundEnd.LoserState.Score()
+	} else {
+		rh.currentRound.Score.T = roundEnd.LoserState.Score()
+		rh.currentRound.Score.CT = roundEnd.WinnerState.Score()
 	}
 	rh.Rounds = append(rh.Rounds, *rh.currentRound)
 	rh.currentRound = nil
@@ -136,20 +154,6 @@ func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
 			}
 		}
 	}
-	// firstPlayer, exists := players[FIRST_PLAYER.UserID]
-	// if !exists {
-	// 	return // Player no longer exists
-	// }
-
-	// rh.currentRound.PlayerPositions[firstPlayer.UserID] = append(rh.currentRound.PlayerPositions[firstPlayer.UserID], playerposition.PlayerPosition{
-	// 	X: firstPlayer.Position().X,
-	// 	Y: firstPlayer.Position().Y,
-	// })
-	// log.Printf("Tick: %d", tick)
-	// rh.currentRound.FrameDatum[tick-rh.currentRound.StartTick].PlayerPositions[firstPlayer.UserID] = playerposition.PlayerPosition{
-	// 	X: firstPlayer.Position().X,
-	// 	Y: firstPlayer.Position().Y,
-	// }
 
 	frame := rh.getFrame(tick)
 	for _, player := range players {
@@ -186,7 +190,11 @@ func (rh *ReplayHandler) onGrenadeProjectileDestroyed(grenadeDestroyed event.Gre
 	for _, trajectoryEntry := range grenadeProjectile.Trajectory {
 		frame := rh.getFrame(trajectoryEntry.Tick)
 		radarX, radarY := rh.mapMetdata.WorldToRadarCoords(trajectoryEntry.Position.X, trajectoryEntry.Position.Y)
-		frame.NadePositions[grenadeProjectile.UniqueID()] = playerposition.NadePosition{
+		// frame.NadePositions[grenadeProjectile.UniqueID()] = playerposition.NadePosition{
+		// 	X: radarX,
+		// 	Y: radarY,
+		// }
+		frame.NadePositions[grenadeProjectile.WeaponInstance.UniqueID2()] = playerposition.NadePosition{
 			X: radarX,
 			Y: radarY,
 		}
@@ -198,7 +206,7 @@ func (rh *ReplayHandler) onSmokeStart(smokeStart event.SmokeStart) {
 	newSmokeStart := events.SmokeEvent{
 		X:      smokeStart.Position.X,
 		Y:      smokeStart.Position.Y,
-		NadeId: smokeStart.Grenade.UniqueID2(), // TODO: Need to confirm this is the same ID as the one from onGrenadeProjectileDestroyed
+		NadeId: smokeStart.Grenade.UniqueID2(), // Using ULID as new Projectiles are not generated for GrenadeEvents
 	}
 	rh.Events = append(rh.Events, events.GameEvent{
 		Tick: tick,
@@ -212,7 +220,7 @@ func (rh *ReplayHandler) onSmokeEnd(smokeExpired event.SmokeExpired) {
 	newSmokeEnd := events.SmokeEvent{
 		X:      smokeExpired.Position.X,
 		Y:      smokeExpired.Position.Y,
-		NadeId: smokeExpired.Grenade.UniqueID2(), // TODO: Need to confirm this is the same ID as the one from onGrenadeProjectileDestroyed
+		NadeId: smokeExpired.Grenade.UniqueID2(), // Using ULID as new Projectiles are not generated for GrenadeEvents
 	}
 	rh.Events = append(rh.Events, events.GameEvent{
 		Tick: tick,

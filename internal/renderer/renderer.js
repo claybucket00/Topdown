@@ -1,138 +1,193 @@
-// const mapImg = new Image();
-// mapImg.src = "../../assets/maps/de_mirage_radar_psd.png";
-
 function loadImg(src) {
     return new Promise((resolve, reject) => {
-        const mapImg = new Image();
-        mapImg.src = src;
-
-        mapImg.onload = () => resolve(mapImg);
-        mapImg.onerror = (err) => reject(err);
+        const img = new Image();
+        img.src = src;
+        img.onload = () => resolve(img);
+        img.onerror = (err) => reject(err);
     });
 }
 
-function worldToRadar(worldX, worldY) {
-  const radarX = (worldX - MAP_META.pos_x) / MAP_META.scale;
-  const radarY = (MAP_META.pos_y - worldY) / MAP_META.scale;
-  return { x: radarX, y: radarY };
-}
-
 function radarToCanvas(radarX, radarY, canvas, image) {
-  return {
-    x: radarX * (canvas.width / image.width),
-    y: radarY * (canvas.height / image.height)
-  };
+    return {
+        x: radarX * (canvas.width  / image.width),
+        y: radarY * (canvas.height / image.height)
+    };
 }
 
-// mapImg.onload = () => {
-//     canvas.width = mapImg.width;
-//     canvas.height = mapImg.height;
-//     canvas_coords = radarToCanvas(radar_coords.x, radar_coords.y, canvas, mapImg);
+// ============================================================
+// STATE TRACKER
+// ============================================================
+class GameState {
+    constructor(roundMetadata, playerMetadata, nadeMetadata, frames) {
+        this.playerTeams      = roundMetadata.player_to_teams; // { playerId -> 2 (T) | 3 (CT) }
+        this.playerMeta       = playerMetadata;                // { playerId -> { Name } }
+        this.nadeMeta = nadeMetadata;
+        this.nadeTrajectories = this._buildNadeTrajectories(frames);
 
-//     ctx.drawImage(mapImg, 0, 0, canvas.width, canvas.height);
-//     ctx.beginPath();
-//     ctx.arc(canvas_coords.x, canvas_coords.y, 5, 0, 2 * Math.PI, false);
-//     ctx.fillStyle = "red";
-//     ctx.fill();
-
-// };
-
-function processPlayerPositions(playerX, playerY, canvas, mapImg) {
-    const radarCoords = worldToRadar(playerX, playerY);
-    const canvasCoords = radarToCanvas(radarCoords.x, radarCoords.y, canvas, mapImg);
-    return {x: canvasCoords.x, y: canvasCoords.y};
-}
-
-async function init() {
-    const canvas = document.getElementById("map");
-    const ctx = canvas.getContext("2d");
-    const [replayData, mapImg] = await Promise.all([
-        fetch("output.json").then(response => response.json()),
-        loadImg("../../assets/maps/de_mirage_radar_psd.png")
-    ])
-
-    canvas.width = mapImg.width;
-    canvas.height = mapImg.height;
-
-    const tickRate = replayData.tickRate;
-    const tickDuration = 1000 / tickRate; // ms
-
-    //positions = replayData.rounds[0].player_positions["7"]; // TODO: Make player ID dynamic
-    // canvasPositions = positions.map(pos => processPlayerPositions(pos.x, pos.y, canvas, mapImg));
-    positions = replayData.rounds[1]
-    
-    // Build nade trajectories for interpolation
-    const nadeTrajectories = {};
-    for (let tick = 0; tick < positions.length; tick++) {
-        for (const [nadeId, pos] of Object.entries(positions[tick].nade_positions)) {
-            if (!nadeTrajectories[nadeId]) {
-                nadeTrajectories[nadeId] = [];
-            }
-            nadeTrajectories[nadeId].push({tick, x: pos.x, y: pos.y});
-        }
+        this.players = {}; // { playerId -> { id, name, team, x, y } }
+        this.nades   = {}; // { nadeId  -> { id, x, y, type } }
     }
 
-    // Function to interpolate nade position at a given tick
-    function interpolatePosition(trajectory, tick) {
-        if (trajectory.length === 0) return null;
-        if (tick < trajectory[0].tick || tick > trajectory[trajectory.length - 1].tick) return null;
-        
+    // Pre-build a map of nadeId -> [{frameIndex, x, y}, ...] across all frames.
+    // Needed because nade positions are sparse — not every frame contains every nade.
+    _buildNadeTrajectories(frames) {
+        const trajectories = {};
+        for (let i = 0; i < frames.length; i++) {
+            for (const [nadeId, pos] of Object.entries(frames[i].nade_positions)) {
+                if (!trajectories[nadeId]) trajectories[nadeId] = [];
+                trajectories[nadeId].push({ frame: i, x: pos.x, y: pos.y });
+            }
+        }
+        return trajectories;
+    }
+
+    _interpolateNade(trajectory, frameFloat) {
+        if (frameFloat < trajectory[0].frame || frameFloat > trajectory[trajectory.length - 1].frame) return null;
         for (let i = 0; i < trajectory.length - 1; i++) {
-            if (tick >= trajectory[i].tick && tick <= trajectory[i + 1].tick) {
-                const t = (tick - trajectory[i].tick) / (trajectory[i + 1].tick - trajectory[i].tick);
+            if (frameFloat >= trajectory[i].frame && frameFloat <= trajectory[i + 1].frame) {
+                const t = (frameFloat - trajectory[i].frame) / (trajectory[i + 1].frame - trajectory[i].frame);
                 return {
                     x: trajectory[i].x + t * (trajectory[i + 1].x - trajectory[i].x),
-                    y: trajectory[i].y + t * (trajectory[i + 1].y - trajectory[i].y)
+                    y: trajectory[i].y + t * (trajectory[i + 1].y - trajectory[i].y),
                 };
             }
         }
         return null;
     }
-    
-    let currentTick = 0;
-    let accumulator = 0;
-    let lastTime = performance.now();
-    function animatePlayer(now) {
-        if (currentTick >= positions.length) {
-            return;
+
+    // Called every animation frame. Players update discretely per tick;
+    // nades are interpolated using the sub-tick progress (0–1).
+    applyFrame(frameData, frameIndex, progress) {
+        this.players = {};
+        for (const [id, pos] of Object.entries(frameData.player_positions)) {
+            this.players[id] = {
+                id,
+                name: this.playerMeta[id]?.Name,
+                team: this.playerTeams[id],
+                x:    pos.x,
+                y:    pos.y,
+            };
         }
-        const delta = now - lastTime;
-        lastTime = now;
-        accumulator += delta;
-        while (accumulator >= tickDuration) {
-            accumulator -= tickDuration;
-            currentTick++;
-            if (currentTick >= positions.length) {
-                return;
-            }
+
+        const frameFloat = frameIndex + progress;
+        this.nades = {};
+        for (const [nadeId, trajectory] of Object.entries(this.nadeTrajectories)) {
+            const pos = this._interpolateNade(trajectory, frameFloat);
+            if (pos) this.nades[nadeId] = { id: nadeId, x: pos.x, y: pos.y, type: this.nadeMeta[nadeId]?.Type };
         }
+    }
+}
+
+// ============================================================
+// THEME
+// ============================================================
+const RenderTheme = {
+    players: {
+        CT: "#2e6bb0",
+        T: "#aeb821",
+        outline: "#000000",
+        radius: 6
+    },
+    grenades: {
+        flash: "#ffffff",
+        smoke: "#aaaaaa",
+        he: "#ff9900",
+        molotov: "#ff3300"
+    },
+    effects: {
+        smokeRadius: "rgba(120,120,120,0.35)",
+        fire: "rgba(255,120,0,0.5)"
+    }
+};
+// ============================================================
+// RENDERER
+// ============================================================
+class Renderer {
+    constructor(canvas, mapImg, theme) {
+        this.canvas = canvas;
+        this.ctx    = canvas.getContext("2d");
+        this.mapImg = mapImg;
+        this.theme = theme;
+    }
+
+    render(state) {
+        const { ctx, canvas, mapImg } = this;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(mapImg, 0, 0, canvas.width, canvas.height);
 
-        for (const playerPos of Object.values(positions[currentTick].player_positions)) {
-            const playerCanvasPos = radarToCanvas(playerPos.x, playerPos.y, canvas, mapImg);
-            ctx.beginPath();
-            ctx.arc(playerCanvasPos.x, playerCanvasPos.y, 5, 0, 2 * Math.PI, false);
-            ctx.fillStyle = "red";
-            ctx.fill();
+        for (const player of Object.values(state.players)) {
+            const pos = radarToCanvas(player.x, player.y, canvas, mapImg);
+            this._drawDot(pos.x, pos.y, player.team === 3 ? this.theme.players.CT : this.theme.players.T, this.theme.players.radius);
+            this._drawName(pos.x, pos.y, this.theme.players.radius, player.name)
         }
 
-        // Draw interpolated nade positions
-        for (const nadeId in nadeTrajectories) {
-            const pos = interpolatePosition(nadeTrajectories[nadeId], currentTick);
-            if (pos) {
-                const nadeCanvasPos = radarToCanvas(pos.x, pos.y, canvas, mapImg);
-                ctx.beginPath();
-                ctx.arc(nadeCanvasPos.x, nadeCanvasPos.y, 5, 0, 2 * Math.PI, false);
-                ctx.fillStyle = "blue";
-                ctx.fill();
-            }
+        for (const nade of Object.values(state.nades)) {
+            const pos = radarToCanvas(nade.x, nade.y, canvas, mapImg);
+            const nadeColor = nade.type == "Smoke Grenade" ? this.theme.grenades.smoke : this.theme.grenades.flash;
+            this._drawDot(pos.x, pos.y, nadeColor, 4);
         }
-
-        requestAnimationFrame(animatePlayer);
     }
 
-    requestAnimationFrame(animatePlayer);
+    _drawDot(x, y, color, radius) {
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        this.ctx.fillStyle = color;
+        this.ctx.fill();
+    }
+
+    _drawName(x, y, radius, name) {
+        this.ctx.font = "12px Arial";
+        this.ctx.fillStyle = "white";
+        this.ctx.textAlign = "center";
+        this.ctx.textBaseline = "top"
+        this.ctx.fillText(name, x, y - radius - 5);
+    }
+}
+
+// ============================================================
+// INIT + ANIMATION LOOP
+// ============================================================
+async function init() {
+    const canvas = document.getElementById("map");
+    const [replayData, mapImg] = await Promise.all([
+        fetch("output.json").then(r => r.json()),
+        loadImg("../../assets/maps/de_mirage_radar_psd.png"),
+    ]);
+
+    canvas.width  = mapImg.width;
+    canvas.height = mapImg.height;
+
+    const roundIndex   = 1;
+    const frames       = replayData.rounds[roundIndex];
+    const tickRate     = replayData.tickRate;
+    const tickDuration = 1000 / tickRate; // ms per tick (~15.6ms at 64 tick)
+
+    const state    = new GameState(replayData.roundMetadata[roundIndex], replayData.playerMetadata, replayData.nadeMetadata, frames);
+    const renderer = new Renderer(canvas, mapImg, RenderTheme);
+
+    let currentFrame = 0;
+    let accumulator  = 0;
+    let lastTime     = performance.now();
+
+    function loop(now) {
+        const delta = now - lastTime;
+        lastTime = now;
+        accumulator += delta;
+
+        while (accumulator >= tickDuration) {
+            accumulator -= tickDuration;
+            currentFrame++;
+            if (currentFrame >= frames.length) return;
+        }
+
+        // progress is the sub-tick fraction (0–1) used for nade interpolation
+        const progress = accumulator / tickDuration;
+        state.applyFrame(frames[currentFrame], currentFrame, progress);
+        renderer.render(state);
+        requestAnimationFrame(loop);
+    }
+
+    requestAnimationFrame(loop);
 }
 
 init();
