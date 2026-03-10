@@ -190,21 +190,6 @@ func (rh *ReplayHandler) onGrenadeProjectileDestroyed(grenadeDestroyed event.Gre
 			X: radarX,
 			Y: radarY,
 		}
-		// if prevTrajectoryEntry != nil && trajectoryEntry.Tick > prevTrajectoryEntry.Tick+1 {
-		// 	// Interpolate positions for ticks between prevTick and trajectoryEntry.Tick
-		// 	for t := prevTrajectoryEntry.Tick + 1; t < trajectoryEntry.Tick; t++ {
-		// 		ratio := float64(t-prevTrajectoryEntry.Tick) / float64(trajectoryEntry.Tick-prevTrajectoryEntry.Tick)
-		// 		interpolatedX := prevTrajectoryEntry.Position.X + ratio*(trajectoryEntry.Position.X-prevTrajectoryEntry.Position.X)
-		// 		interpolatedY := prevTrajectoryEntry.Position.Y + ratio*(trajectoryEntry.Position.Y-prevTrajectoryEntry.Position.Y)
-		// 		radarX, radarY := rh.mapMetdata.WorldToRadarCoords(interpolatedX, interpolatedY)
-		// 		interpolatedFrame := rh.getFrame(t)
-		// 		interpolatedFrame.NadePositions[grenadeProjectile.UniqueID()] = playerposition.NadePosition{
-		// 			X: radarX,
-		// 			Y: radarY,
-		// 		}
-		// 	}
-		// }
-		// prevTrajectoryEntry = &trajectoryEntry
 	}
 }
 
