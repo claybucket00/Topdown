@@ -5,6 +5,8 @@ import (
 	"os"
 	"topdown/internal/metadata"
 	"topdown/internal/replay"
+
+	ulid "github.com/oklog/ulid/v2"
 )
 
 type PlayerPosition struct {
@@ -35,8 +37,9 @@ type Replay struct {
 	MapName        string                          `json:"mapName"`
 	TickRate       float64                         `json:"tickRate"`
 	PlayerMetadata map[int]metadata.PlayerMetadata `json:"playerMetadata"` // Key: playerId, Val: PlayerMetadata
-	NadeMetadata   map[int64]metadata.NadeMetadata `json:"nadeMetadata"`   // Key: nadeId, Val: NadeMetadata
-	Rounds         [][]FrameData                   `json:"rounds"`
+	// NadeMetadata   map[int64]metadata.NadeMetadata `json:"nadeMetadata"`   // Key: nadeId, Val: NadeMetadata
+	NadeMetadata map[ulid.ULID]metadata.NadeMetadata `json:"nadeMetadata"` // Key: nadeId, Val: NadeMetadata
+	Rounds       [][]FrameData                       `json:"rounds"`
 }
 
 func SerializeReplay(replay *replay.Replay, path string) error {

@@ -1,20 +1,5 @@
-// de_mirage
-const MAP_META = {
-    pos_x: -3230,
-    pos_y: 1713,
-    scale: 5.0
-};
-
-
-const PLAYER_POSITION = {
-    x: -1902,
-    y: -1976
-}
-
 // const mapImg = new Image();
 // mapImg.src = "../../assets/maps/de_mirage_radar_psd.png";
-
-const radar_coords = worldToRadar(PLAYER_POSITION.x, PLAYER_POSITION.y);
 
 function loadImg(src) {
     return new Promise((resolve, reject) => {

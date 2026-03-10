@@ -34,6 +34,7 @@ func main() {
 	// rh.PrintRounds()
 	// rh.PrintPlayerPositionsLength()
 	// rh.PrintNadePositions()
+	rh.CheckNadeIDs()
 	replay := rh.GenerateReplay()
 	// replay.PrintNadeData()
 	err = serialization.SerializeReplay(&replay, "./internal/renderer/output.json")

@@ -3,14 +3,17 @@ package replay
 import (
 	frames "topdown/internal/frames"
 	metadata "topdown/internal/metadata"
+
+	ulid "github.com/oklog/ulid/v2"
 )
 
 type Replay struct {
 	MapName        string
 	TickRate       float64
 	PlayerMetadata map[int]metadata.PlayerMetadata // Key: playerId, Val: PlayerMetadata
-	NadeMetadata   map[int64]metadata.NadeMetadata // Key: nadeId, Val: NadeMetadata
-	Rounds         [][]frames.FrameData
+	// NadeMetadata   map[int64]metadata.NadeMetadata // Key: nadeId, Val: NadeMetadata
+	NadeMetadata map[ulid.ULID]metadata.NadeMetadata // Key: nadeId, Val: NadeMetadata
+	Rounds       [][]frames.FrameData
 }
 
 func (rh *ReplayHandler) GenerateReplay() Replay {
