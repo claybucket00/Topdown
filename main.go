@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"topdown/internal/replay"
-	"topdown/internal/serialization"
 
 	demoinfocs "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs"
 )
@@ -37,7 +36,8 @@ func main() {
 	rh.CheckNadeIDs()
 	replay := rh.GenerateReplay()
 	// replay.PrintNadeData()
-	err = serialization.SerializeReplay(&replay, "./internal/renderer/output.json")
+	// err = serialization.SerializeReplay(&replay, "./internal/renderer/output.json")
+	err = replay.SerializeReplay("./internal/renderer/output.json")
 	if err != nil {
 		log.Panicf("Failed to serialize replay: %v", err)
 	}

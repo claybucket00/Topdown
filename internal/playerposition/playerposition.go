@@ -11,11 +11,11 @@ type NadePath struct {
 }
 
 type NadePosition struct {
-	X float64
-	Y float64
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
 }
 
 type PlayerPosition struct {
-	X float64
-	Y float64
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
 }
