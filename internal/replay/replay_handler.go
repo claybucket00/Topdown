@@ -246,20 +246,3 @@ func (rh *ReplayHandler) PrintNadePositions() {
 		println("Nade positions recorded:", nadePositionsLengths)
 	}
 }
-
-// func (rh *ReplayHandler) PrintRounds() {
-// 	for _, r := range rh.Rounds {
-// 		println("Round", r.Number, "started at tick", r.StartTick, "and ended at tick", r.EndTick)
-// 	}
-// }
-
-// func (rh *ReplayHandler) PrintPlayerPositionsLength() {
-// 	if len(rh.Rounds[0].PlayerPositions) == 0 {
-// 		println("No player positions recorded for round 1")
-// 		return
-// 	}
-// 	for playerID, positions := range rh.Rounds[0].PlayerPositions {
-// 		println("Player ID:", playerID, "Positions Length:", len(positions))
-// 	}
-
-// }
