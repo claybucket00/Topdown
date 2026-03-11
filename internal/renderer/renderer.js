@@ -24,8 +24,19 @@ class GameState {
         this.nadeMeta = nadeMetadata;
         this.nadeTrajectories = this._buildNadeTrajectories(frames);
 
-        this.players = {}; // { playerId -> { id, name, team, x, y } }
+        this.players = {}; // { playerId -> { id, name, team, x, y, alive} }
+        for (const playerId in this.playerMeta) {
+            this.players[playerId] = {
+                playerId,
+                name: this.playerMeta[playerId]?.Name,
+                team: this.playerTeams[playerId],
+                x: 0.0,
+                y: 0.0,
+                alive: true,
+            }
+        }
         this.nades   = {}; // { nadeId  -> { id, x, y, type } }
+        this.blooms = {}; // { nadeId -> { x, y, type, timeRemaining } }
     }
 
     // Pre-build a map of nadeId -> [{frameIndex, x, y}, ...] across all frames.
@@ -58,14 +69,16 @@ class GameState {
     // Called every animation frame. Players update discretely per tick;
     // nades are interpolated using the sub-tick progress (0–1).
     applyFrame(frameData, frameIndex, progress) {
-        this.players = {};
+        // this.players = {};
         for (const [id, pos] of Object.entries(frameData.player_positions)) {
+            const alive = this.players[id]?.alive ?? true; // Preserve alive status if player is missing from frame (e.g. due to death)
             this.players[id] = {
                 id,
                 name: this.playerMeta[id]?.Name,
                 team: this.playerTeams[id],
                 x:    pos.x,
                 y:    pos.y,
+                alive: alive,
             };
         }
 
@@ -75,6 +88,28 @@ class GameState {
             const pos = this._interpolateNade(trajectory, frameFloat);
             if (pos) this.nades[nadeId] = { id: nadeId, x: pos.x, y: pos.y, type: this.nadeMeta[nadeId]?.Type };
         }
+    }
+
+    applyEvent (event) {
+        // TODO: apply other events besides death events
+        // console.log("Applying event:", event);
+        const eventData = event.Data
+        switch (event.Type) {
+            case 2: // Smoke bloom
+                const nadeId = eventData.NadeId;
+                this.blooms[nadeId] = { x: eventData.X, y: eventData.Y, type: this.nadeMeta[nadeId]?.Type, timeRemaining: 18000 }; // Smoke bloom with 15s duration
+                delete this.nadeTrajectories[nadeId];
+                break;
+            case 3: // Smoke dissapate
+                const nadeId2 = eventData.NadeId;
+                delete this.blooms[nadeId2];
+                break;
+            case 6: // Kill event
+                const victimId = eventData.VictimID;
+                this.players[victimId].alive = false;
+                break;
+        }
+        
     }
 }
 
@@ -95,7 +130,8 @@ const RenderTheme = {
         molotov: "#ff3300"
     },
     effects: {
-        smokeRadius: "rgba(120,120,120,0.35)",
+        smokeColor: "rgba(120,120,120,0.70)",
+        smokeRadius: 28,
         fire: "rgba(255,120,0,0.5)"
     }
 };
@@ -117,15 +153,53 @@ class Renderer {
 
         for (const player of Object.values(state.players)) {
             const pos = radarToCanvas(player.x, player.y, canvas, mapImg);
-            this._drawDot(pos.x, pos.y, player.team === 3 ? this.theme.players.CT : this.theme.players.T, this.theme.players.radius);
-            this._drawName(pos.x, pos.y, this.theme.players.radius, player.name)
+            if (player.alive) {
+                this._drawDot(pos.x, pos.y, player.team === 3 ? this.theme.players.CT : this.theme.players.T, this.theme.players.radius);
+                this._drawName(pos.x, pos.y, this.theme.players.radius, player.name)
+            } else {
+                this._drawX(pos.x, pos.y, player.team === 3 ? this.theme.players.CT : this.theme.players.T, this.theme.players.radius);
+            }
+
         }
 
         for (const nade of Object.values(state.nades)) {
             const pos = radarToCanvas(nade.x, nade.y, canvas, mapImg);
-            const nadeColor = nade.type == "Smoke Grenade" ? this.theme.grenades.smoke : this.theme.grenades.flash;
+            const nadeColor = nade.type == "Smoke Grenade" ? this.theme.grenades.smoke : nade.type == "Flashbang" ? this.theme.grenades.flash : nade.type == "HE Grenade" ? this.theme.grenades.he : nade.type == "Molotov" || nade.type == "Incendiary Grenade" ? this.theme.grenades.molotov : "#000000";
             this._drawDot(pos.x, pos.y, nadeColor, 4);
+            
         }
+
+        for (const bloom of Object.values(state.blooms)) {
+            const pos = radarToCanvas(bloom.x, bloom.y, canvas, mapImg);
+            this._drawNadeBloom(pos.x, pos.y, bloom.type);
+        }
+    }
+
+    _drawNadeBloom(x, y, type) {
+        switch (type) {
+            case "Smoke Grenade":
+                this.ctx.beginPath();
+                this.ctx.fillStyle = this.theme.effects.smokeColor;
+                this.ctx.arc(x, y, this.theme.effects.smokeRadius, 0, 2 * Math.PI);
+                this.ctx.fill();
+                break;
+        }
+    }
+
+    _drawX(x, y, color, radius) {
+        this.ctx.beginPath();
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = 2;
+        this.ctx.moveTo(x - radius, y - radius);
+        this.ctx.lineTo(x + radius, y + radius);
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = 2;
+        this.ctx.moveTo(x + radius, y - radius);
+        this.ctx.lineTo(x - radius, y + radius);
+        this.ctx.stroke();
     }
 
     _drawDot(x, y, color, radius) {
@@ -140,7 +214,7 @@ class Renderer {
         this.ctx.fillStyle = "white";
         this.ctx.textAlign = "center";
         this.ctx.textBaseline = "top"
-        this.ctx.fillText(name, x, y - radius - 5);
+        this.ctx.fillText(name, x, y - radius - 10);
     }
 }
 
@@ -159,6 +233,7 @@ async function init() {
 
     const roundIndex   = 1;
     const frames       = replayData.rounds[roundIndex];
+    const events      = replayData.events[roundIndex];
     const tickRate     = replayData.tickRate;
     const tickDuration = 1000 / tickRate; // ms per tick (~15.6ms at 64 tick)
 
@@ -168,6 +243,8 @@ async function init() {
     let currentFrame = 0;
     let accumulator  = 0;
     let lastTime     = performance.now();
+
+    let eventIdx = 0;
 
     function loop(now) {
         const delta = now - lastTime;
@@ -183,6 +260,10 @@ async function init() {
         // progress is the sub-tick fraction (0–1) used for nade interpolation
         const progress = accumulator / tickDuration;
         state.applyFrame(frames[currentFrame], currentFrame, progress);
+        while (eventIdx < events.length && events[eventIdx].Tick == currentFrame) {
+            state.applyEvent(events[eventIdx]);
+            eventIdx++;
+        }
         renderer.render(state);
         requestAnimationFrame(loop);
     }

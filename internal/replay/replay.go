@@ -3,6 +3,7 @@ package replay
 import (
 	"encoding/json"
 	"os"
+	events "topdown/internal/events"
 	frames "topdown/internal/frames"
 	metadata "topdown/internal/metadata"
 
@@ -16,6 +17,7 @@ type Replay struct {
 	NadeMetadata   map[ulid.ULID]metadata.NadeMetadata `json:"nadeMetadata"`   // Key: nadeId, Val: NadeMetadata
 	RoundMetadata  []metadata.RoundMetadata            `json:"roundMetadata"`  // Slice of RoundMetadata indexed by round number (0-based)
 	Rounds         [][]frames.FrameData                `json:"rounds"`
+	Events         [][]events.GameEvent                `json:"events"`
 }
 
 func (rh *ReplayHandler) GenerateReplay() Replay {
@@ -24,10 +26,12 @@ func (rh *ReplayHandler) GenerateReplay() Replay {
 		TickRate:       rh.TickRate,
 		PlayerMetadata: rh.PlayerMetadata,
 		NadeMetadata:   rh.NadeMetadata,
+		Events:         make([][]events.GameEvent, len(rh.Rounds)),
 		RoundMetadata:  make([]metadata.RoundMetadata, len(rh.Rounds)),
 		Rounds:         make([][]frames.FrameData, len(rh.Rounds)),
 	}
 
+	eventIndex := 0
 	for i, round := range rh.Rounds {
 		// log.Printf("Processing round %d start=%d end=%d\n",
 		// 	i, round.StartTick, round.EndTick)
@@ -42,13 +46,17 @@ func (rh *ReplayHandler) GenerateReplay() Replay {
 			if exists {
 				roundFrames = append(roundFrames, *frameData)
 			}
-			// if frameData, exists := rh.Frames[tick]; exists {
-			// 	roundFrames = append(roundFrames, *frameData)
-			// }
 		}
 
-		// log.Printf("Round %d frames: %d\n", i, len(roundFrames))
+		roundEvents := make([]events.GameEvent, 0)
+		for eventIndex < len(rh.Events) && round.StartTick <= rh.Events[eventIndex].Tick && rh.Events[eventIndex].Tick <= round.EndTick {
+			rh.Events[eventIndex].Tick = rh.Events[eventIndex].Tick - round.StartTick // Convert to 0-based tick for the round
+			roundEvents = append(roundEvents, rh.Events[eventIndex])
+			eventIndex++
+		}
+
 		replay.Rounds[i] = roundFrames
+		replay.Events[i] = roundEvents
 	}
 	return replay
 }

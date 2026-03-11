@@ -24,6 +24,7 @@ type ReplayHandler struct {
 	MapName        string
 	TickRate       float64
 	prevTick       int
+	dead           map[int]struct{} // Map to track players who are dead so we can skip collecting their position
 	mapMetdata     metadata.MapMetadata
 	PlayerMetadata map[int]metadata.PlayerMetadata     // Key: playerId, Val: PlayerMetadata
 	NadeMetadata   map[ulid.ULID]metadata.NadeMetadata // TESTING: ULID instead of UniqueID()
@@ -38,8 +39,8 @@ func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 		Frames:         make(map[int]*framedata.FrameData),
 		PlayerMetadata: make(map[int]metadata.PlayerMetadata),
 		NadeMetadata:   make(map[ulid.ULID]metadata.NadeMetadata),
-		//NadeMetadata:   make(map[int64]metadata.NadeMetadata),
-		prevTick: 0.0,
+		dead:           make(map[int]struct{}),
+		prevTick:       0,
 	}
 
 	parser.RegisterNetMessageHandler(rh.getMapName)
@@ -49,6 +50,7 @@ func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 	parser.RegisterEventHandler(rh.onGrenadeProjectileDestroyed) // Grenade positions
 	parser.RegisterEventHandler(rh.onSmokeStart)                 // Smoke start events
 	parser.RegisterEventHandler(rh.onSmokeEnd)                   // Smoke end events
+	parser.RegisterEventHandler(rh.onKill)                       // Track dead players
 
 	return rh
 }
@@ -111,6 +113,7 @@ func (rh *ReplayHandler) onRoundEnd(roundEnd event.RoundEnd) {
 	}
 	rh.Rounds = append(rh.Rounds, *rh.currentRound)
 	rh.currentRound = nil
+	rh.dead = make(map[int]struct{}) // Reset dead players for next round. We do this on round end instead of round start because we cannot guarantee round start will process before onTickDone
 
 	// rh.currentRound.EndTick = rh.parser.GameState().IngameTick()
 	// rh.Rounds = append(rh.Rounds, *rh.currentRound)
@@ -157,10 +160,13 @@ func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
 
 	frame := rh.getFrame(tick)
 	for _, player := range players {
-		radarX, radarY := rh.mapMetdata.WorldToRadarCoords(player.Position().X, player.Position().Y)
-		frame.PlayerPositions[player.UserID] = playerposition.PlayerPosition{
-			X: radarX,
-			Y: radarY,
+		// Only track alive players to compress replay size
+		if _, isDead := rh.dead[player.UserID]; !isDead {
+			radarX, radarY := rh.mapMetdata.WorldToRadarCoords(player.Position().X, player.Position().Y)
+			frame.PlayerPositions[player.UserID] = playerposition.PlayerPosition{
+				X: radarX,
+				Y: radarY,
+			}
 		}
 	}
 	// radarX, radarY := rh.mapMetdata.WorldToRadarCoords(firstPlayer.Position().X, firstPlayer.Position().Y)
@@ -190,10 +196,6 @@ func (rh *ReplayHandler) onGrenadeProjectileDestroyed(grenadeDestroyed event.Gre
 	for _, trajectoryEntry := range grenadeProjectile.Trajectory {
 		frame := rh.getFrame(trajectoryEntry.Tick)
 		radarX, radarY := rh.mapMetdata.WorldToRadarCoords(trajectoryEntry.Position.X, trajectoryEntry.Position.Y)
-		// frame.NadePositions[grenadeProjectile.UniqueID()] = playerposition.NadePosition{
-		// 	X: radarX,
-		// 	Y: radarY,
-		// }
 		frame.NadePositions[grenadeProjectile.WeaponInstance.UniqueID2()] = playerposition.NadePosition{
 			X: radarX,
 			Y: radarY,
@@ -201,11 +203,25 @@ func (rh *ReplayHandler) onGrenadeProjectileDestroyed(grenadeDestroyed event.Gre
 	}
 }
 
+func (rh *ReplayHandler) onKill(kill event.Kill) {
+	if kill.Victim != nil {
+		rh.dead[kill.Victim.UserID] = struct{}{}
+	}
+	rh.Events = append(rh.Events, events.GameEvent{
+		Tick: rh.parser.GameState().IngameTick(),
+		Type: events.EventKill,
+		Data: events.KillEvent{
+			VictimID: kill.Victim.UserID,
+		},
+	})
+}
+
 func (rh *ReplayHandler) onSmokeStart(smokeStart event.SmokeStart) {
 	tick := rh.parser.GameState().IngameTick()
+	radarX, radarY := rh.mapMetdata.WorldToRadarCoords(smokeStart.Position.X, smokeStart.Position.Y)
 	newSmokeStart := events.SmokeEvent{
-		X:      smokeStart.Position.X,
-		Y:      smokeStart.Position.Y,
+		X:      radarX,
+		Y:      radarY,
 		NadeId: smokeStart.Grenade.UniqueID2(), // Using ULID as new Projectiles are not generated for GrenadeEvents
 	}
 	rh.Events = append(rh.Events, events.GameEvent{
@@ -217,9 +233,10 @@ func (rh *ReplayHandler) onSmokeStart(smokeStart event.SmokeStart) {
 
 func (rh *ReplayHandler) onSmokeEnd(smokeExpired event.SmokeExpired) {
 	tick := rh.parser.GameState().IngameTick()
+	radarX, radarY := rh.mapMetdata.WorldToRadarCoords(smokeExpired.Position.X, smokeExpired.Position.Y)
 	newSmokeEnd := events.SmokeEvent{
-		X:      smokeExpired.Position.X,
-		Y:      smokeExpired.Position.Y,
+		X:      radarX,
+		Y:      radarY,
 		NadeId: smokeExpired.Grenade.UniqueID2(), // Using ULID as new Projectiles are not generated for GrenadeEvents
 	}
 	rh.Events = append(rh.Events, events.GameEvent{

@@ -16,12 +16,16 @@ const (
 	EventSmokeStart
 	EventSmokeEnd
 	EventInfernoStart
-	EvenInfernoEnd
+	EventInfernoEnd
+	EventKill
 )
 
 type SmokeEvent struct {
 	X      float64
 	Y      float64
 	NadeId ulid.ULID
-	// NadeId int64
+}
+
+type KillEvent struct {
+	VictimID int
 }
