@@ -51,6 +51,8 @@ func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 	parser.RegisterEventHandler(rh.onSmokeStart)                 // Smoke start events
 	parser.RegisterEventHandler(rh.onSmokeEnd)                   // Smoke end events
 	parser.RegisterEventHandler(rh.onKill)                       // Track dead players
+	// parser.RegisterEventHandler(rh.onFireGrenadeStart)
+	parser.RegisterEventHandler(rh.onFlashExplode)
 
 	return rh
 }
@@ -133,20 +135,6 @@ func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
 		return
 	}
 
-	// TODO: Track all players
-	// if FIRST_PLAYER == nil {
-	// 	players := rh.parser.GameState().Participants().Playing()
-	// 	if len(players) > 0 {
-	// 		FIRST_PLAYER = players[0]
-	// 	} else {
-	// 		return // No players to track
-	// 	}
-	// 	for _, player := range players {
-	// 		rh.PlayerMetadata[player.UserID] = metadata.PlayerMetadata{
-	// 			Name: player.Name,
-	// 		}
-	// 	}
-	// }
 	players := rh.parser.GameState().Participants().Playing()
 	if len(players) > len(rh.PlayerMetadata) {
 		for _, player := range players {
@@ -169,10 +157,28 @@ func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
 			}
 		}
 	}
-	// radarX, radarY := rh.mapMetdata.WorldToRadarCoords(firstPlayer.Position().X, firstPlayer.Position().Y)
-	// frame.PlayerPositions[firstPlayer.UserID] = playerposition.PlayerPosition{
-	// 	X: radarX,
-	// 	Y: radarY,
+
+	// TODO: Depending on the complexity, might need to refactor this function to behave like smokes. Currently we track infernos on ticks so we can get accurate 2D convex hulls for rendering the spread.
+	// Track infernos.
+	// currentInfernos := rh.parser.GameState().Infernos()
+	// if len(currentInfernos) != 0 {
+	// 	for _, inferno := range currentInfernos {
+	// 		points := inferno.Fires().Active().ConvexHull2D()
+	// 		for i, point := range points {
+	// 			radarX, radarY := rh.mapMetdata.WorldToRadarCoords(point.X, point.Y)
+	// 			points[i].X = radarX
+	// 			points[i].Y = radarY
+	// 		}
+	// 		infernoData := events.InfernoEvent{
+	// 			Points: points,
+	// 			NadeId: inferno.UniqueID(),
+	// 		}
+	// 		rh.Events = append(rh.Events, events.GameEvent{
+	// 			Tick: tick,
+	// 			Type: events.EventInferno,
+	// 			Data: infernoData,
+	// 		})
+	// 	}
 	// }
 
 }
@@ -243,6 +249,59 @@ func (rh *ReplayHandler) onSmokeEnd(smokeExpired event.SmokeExpired) {
 		Tick: tick,
 		Type: events.EventSmokeEnd,
 		Data: newSmokeEnd,
+	})
+}
+
+func (rh *ReplayHandler) onFlashExplode(flashExplode event.FlashExplode) {
+	tick := rh.parser.GameState().IngameTick()
+	radarX, radarY := rh.mapMetdata.WorldToRadarCoords(flashExplode.Position.X, flashExplode.Position.Y)
+	newFlashEvent := events.GrenadeEvent{
+		X:      radarX,
+		Y:      radarY,
+		NadeId: flashExplode.Grenade.UniqueID2(), // Using ULID as new Projectiles are not generated for GrenadeEvents
+	}
+	rh.Events = append(rh.Events, events.GameEvent{
+		Tick: tick,
+		Type: events.EventFlash,
+		Data: newFlashEvent,
+	})
+}
+
+func (rh *ReplayHandler) onFireGrenadeStart(fireGrenadeStart event.FireGrenadeStart) {
+	tick := rh.parser.GameState().IngameTick()
+	radarX, radarY := rh.mapMetdata.WorldToRadarCoords(fireGrenadeStart.Position.X, fireGrenadeStart.Position.Y)
+	if fireGrenadeStart.Grenade == nil {
+		// println("No grenade found for fire start")
+		return
+	}
+	newFireStart := events.GrenadeEvent{
+		X:      radarX,
+		Y:      radarY,
+		NadeId: fireGrenadeStart.Grenade.UniqueID2(), // Using ULID as new Projectiles are not generated for GrenadeEvents
+	}
+	rh.Events = append(rh.Events, events.GameEvent{
+		Tick: tick,
+		Type: events.EventInfernoStart,
+		Data: newFireStart,
+	})
+}
+
+func (rh *ReplayHandler) onFireGrenadeEnd(fireGrenadeEnd event.FireGrenadeExpired) {
+	tick := rh.parser.GameState().IngameTick()
+	radarX, radarY := rh.mapMetdata.WorldToRadarCoords(fireGrenadeEnd.Position.X, fireGrenadeEnd.Position.Y)
+	if fireGrenadeEnd.Grenade == nil {
+		// println("No grenade found for fire end")
+		return
+	}
+	newFireStart := events.GrenadeEvent{
+		X:      radarX,
+		Y:      radarY,
+		NadeId: fireGrenadeEnd.Grenade.UniqueID2(), // Using ULID as new Projectiles are not generated for GrenadeEvents
+	}
+	rh.Events = append(rh.Events, events.GameEvent{
+		Tick: tick,
+		Type: events.EventInfernoStart,
+		Data: newFireStart,
 	})
 }
 

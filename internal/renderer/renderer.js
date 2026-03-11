@@ -90,21 +90,35 @@ class GameState {
         }
     }
 
+    tickBlooms(delta) {
+        for (const [nadeId, bloom] of Object.entries(this.blooms)) {
+            bloom.timeRemaining -= delta;
+            if (bloom.timeRemaining <= 0) {
+                delete this.blooms[nadeId];
+            }
+        }
+    }
+
     applyEvent (event) {
         // TODO: apply other events besides death events
         // console.log("Applying event:", event);
         const eventData = event.Data
         switch (event.Type) {
+            case 1: // Flash Explode
+                const nadeId4 = eventData.NadeId;
+                this.blooms[nadeId4] = { x: eventData.X, y: eventData.Y, type: this.nadeMeta[nadeId4]?.Type, timeRemaining: 500 }; // Flash with 0.5s duration
+                delete this.nadeTrajectories[nadeId4];
+                break;
             case 2: // Smoke bloom
                 const nadeId = eventData.NadeId;
-                this.blooms[nadeId] = { x: eventData.X, y: eventData.Y, type: this.nadeMeta[nadeId]?.Type, timeRemaining: 18000 }; // Smoke bloom with 15s duration
+                this.blooms[nadeId] = { x: eventData.X, y: eventData.Y, type: this.nadeMeta[nadeId]?.Type, timeRemaining: 18000 }; // Smoke bloom with 18s duration
                 delete this.nadeTrajectories[nadeId];
                 break;
             case 3: // Smoke dissapate
                 const nadeId2 = eventData.NadeId;
                 delete this.blooms[nadeId2];
                 break;
-            case 6: // Kill event
+            case 4: // Kill event
                 const victimId = eventData.VictimID;
                 this.players[victimId].alive = false;
                 break;
@@ -132,7 +146,9 @@ const RenderTheme = {
     effects: {
         smokeColor: "rgba(120,120,120,0.70)",
         smokeRadius: 28,
-        fire: "rgba(255,120,0,0.5)"
+        fire: "rgba(255,120,0,0.5)",
+        flashExplode: "rgba(255,255,255,0.80)",
+        flashRadius: 10
     }
 };
 // ============================================================
@@ -173,6 +189,15 @@ class Renderer {
             const pos = radarToCanvas(bloom.x, bloom.y, canvas, mapImg);
             this._drawNadeBloom(pos.x, pos.y, bloom.type);
         }
+
+        // for (const hull of Object.values(state.hulls)) {
+        //     // console.log("Original points: ", hull.points)
+        //     const points = hull.points.map((point) => radarToCanvas(point.X, point.Y, this.canvas, this.mapImg))
+        //     if (points.length != 0) {
+        //         this._drawHull(points, this.theme.effects.fire)
+        //     }
+        //     // console.log("Shifted points: ", points)
+        // }
     }
 
     _drawNadeBloom(x, y, type) {
@@ -183,7 +208,30 @@ class Renderer {
                 this.ctx.arc(x, y, this.theme.effects.smokeRadius, 0, 2 * Math.PI);
                 this.ctx.fill();
                 break;
+            case "Flashbang":
+                this.ctx.beginPath();
+                this.ctx.fillStyle = this.theme.effects.flashExplode;
+                this.ctx.arc(x, y, this.theme.effects.flashRadius, 0, 2 * Math.PI);
+                this.ctx.fill();
+                break;
+
         }
+    }
+
+    _drawHull(pts, fillStyle) {
+        this.ctx.strokeStyle = 'blue';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(pts[0].x, pts[0].x); // Start at the first hull point
+
+        for (let i = 1; i < pts.length; i++) {
+            this.ctx.lineTo(pts[i].x, pts[i].y); // Draw lines to subsequent points
+        }
+
+        this.ctx.closePath(); // Close the polygon, connecting the last point to the first
+        this.ctx.stroke();
+        this.ctx.fillStyle = fillStyle;
+        this.ctx.fill();
     }
 
     _drawX(x, y, color, radius) {
@@ -260,6 +308,7 @@ async function init() {
         // progress is the sub-tick fraction (0–1) used for nade interpolation
         const progress = accumulator / tickDuration;
         state.applyFrame(frames[currentFrame], currentFrame, progress);
+        state.tickBlooms(delta);
         while (eventIdx < events.length && events[eventIdx].Tick == currentFrame) {
             state.applyEvent(events[eventIdx]);
             eventIdx++;
