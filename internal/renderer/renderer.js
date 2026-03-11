@@ -104,7 +104,7 @@ class GameState {
         // console.log("Applying event:", event);
         const eventData = event.Data
         switch (event.Type) {
-            case 1: // Flash Explode
+            case 1: // Flash explode
                 const nadeId4 = eventData.NadeId;
                 this.blooms[nadeId4] = { x: eventData.X, y: eventData.Y, type: this.nadeMeta[nadeId4]?.Type, timeRemaining: 500 }; // Flash with 0.5s duration
                 delete this.nadeTrajectories[nadeId4];
@@ -121,6 +121,11 @@ class GameState {
             case 4: // Kill event
                 const victimId = eventData.VictimID;
                 this.players[victimId].alive = false;
+                break;
+            case 5: // HE explode
+                const nadeId5 = eventData.NadeId;
+                this.blooms[nadeId5] = { x: eventData.X, y: eventData.Y, type: this.nadeMeta[nadeId5]?.Type, timeRemaining: 500 }; // Smoke bloom with 18s duration
+                delete this.nadeTrajectories[nadeId5];
                 break;
         }
         
@@ -148,7 +153,9 @@ const RenderTheme = {
         smokeRadius: 28,
         fire: "rgba(255,120,0,0.5)",
         flashExplode: "rgba(255,255,255,0.80)",
-        flashRadius: 10
+        flashRadius: 10,
+        heExplode:"rgba(120,120,120,0.80)",
+        heRadius: 10
     }
 };
 // ============================================================
@@ -212,6 +219,12 @@ class Renderer {
                 this.ctx.beginPath();
                 this.ctx.fillStyle = this.theme.effects.flashExplode;
                 this.ctx.arc(x, y, this.theme.effects.flashRadius, 0, 2 * Math.PI);
+                this.ctx.fill();
+                break;
+            case "HE Grenade":
+                this.ctx.beginPath();
+                this.ctx.fillStyle = this.theme.effects.heExplode;
+                this.ctx.arc(x, y, this.theme.effects.heRadius, 0, 2 * Math.PI);
                 this.ctx.fill();
                 break;
 

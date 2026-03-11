@@ -53,6 +53,7 @@ func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 	parser.RegisterEventHandler(rh.onKill)                       // Track dead players
 	// parser.RegisterEventHandler(rh.onFireGrenadeStart)
 	parser.RegisterEventHandler(rh.onFlashExplode)
+	parser.RegisterEventHandler(rh.onHeExplode)
 
 	return rh
 }
@@ -264,6 +265,21 @@ func (rh *ReplayHandler) onFlashExplode(flashExplode event.FlashExplode) {
 		Tick: tick,
 		Type: events.EventFlash,
 		Data: newFlashEvent,
+	})
+}
+
+func (rh *ReplayHandler) onHeExplode(heExplode event.HeExplode) {
+	tick := rh.parser.GameState().IngameTick()
+	radarX, radarY := rh.mapMetdata.WorldToRadarCoords(heExplode.Position.X, heExplode.Position.Y)
+	newHeEvent := events.GrenadeEvent{
+		X:      radarX,
+		Y:      radarY,
+		NadeId: heExplode.Grenade.UniqueID2(),
+	}
+	rh.Events = append(rh.Events, events.GameEvent{
+		Tick: tick,
+		Type: events.EventHe,
+		Data: newHeEvent,
 	})
 }
 

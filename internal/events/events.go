@@ -19,7 +19,7 @@ const (
 	EventSmokeStart
 	EventSmokeEnd
 	EventKill
-	EventInferno
+	EventHe
 	EventInfernoStart
 	EventInfernoEnd
 )
