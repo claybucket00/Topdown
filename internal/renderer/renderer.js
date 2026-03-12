@@ -25,16 +25,16 @@ class GameState {
         this.nadeTrajectories = this._buildNadeTrajectories(frames);
 
         this.players = {}; // { playerId -> { id, name, team, x, y, alive} }
-        for (const playerId in this.playerMeta) {
-            this.players[playerId] = {
-                playerId,
-                name: this.playerMeta[playerId]?.Name,
-                team: this.playerTeams[playerId],
-                x: 0.0,
-                y: 0.0,
-                alive: true,
-            }
-        }
+        // for (const playerId in this.playerMeta) {
+        //     this.players[playerId] = {
+        //         playerId,
+        //         name: this.playerMeta[playerId]?.Name,
+        //         team: this.playerTeams[playerId],
+        //         x: 0.0,
+        //         y: 0.0,
+        //         alive: true,
+        //     }
+        // }
         this.nades   = {}; // { nadeId  -> { id, x, y, type } }
         this.blooms = {}; // { nadeId -> { x, y, type, timeRemaining } }
     }
@@ -127,6 +127,11 @@ class GameState {
                 this.blooms[nadeId5] = { x: eventData.X, y: eventData.Y, type: this.nadeMeta[nadeId5]?.Type, timeRemaining: 500 }; // Smoke bloom with 18s duration
                 delete this.nadeTrajectories[nadeId5];
                 break;
+            case 6: // Team change event
+                const playerId = eventData.PlayerID
+                const newTeam = eventData.Team
+                this.players[playerId].team = newTeam
+                break;
         }
         
     }
@@ -176,6 +181,7 @@ class Renderer {
 
         for (const player of Object.values(state.players)) {
             const pos = radarToCanvas(player.x, player.y, canvas, mapImg);
+            if (player.team !== 2 && player.team !== 3) continue; // Skip spectators and unassigned players
             if (player.alive) {
                 this._drawDot(pos.x, pos.y, player.team === 3 ? this.theme.players.CT : this.theme.players.T, this.theme.players.radius);
                 this._drawName(pos.x, pos.y, this.theme.players.radius, player.name)

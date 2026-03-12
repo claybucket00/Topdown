@@ -2,6 +2,7 @@ package events
 
 import (
 	r2 "github.com/golang/geo/r2"
+	common "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	ulid "github.com/oklog/ulid/v2"
 )
 
@@ -20,9 +21,15 @@ const (
 	EventSmokeEnd
 	EventKill
 	EventHe
+	EventTeamChange
 	EventInfernoStart
 	EventInfernoEnd
 )
+
+type TeamChangeEvent struct {
+	PlayerID int
+	Team     common.Team
+}
 
 type SmokeEvent struct {
 	X      float64

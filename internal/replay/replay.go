@@ -49,7 +49,11 @@ func (rh *ReplayHandler) GenerateReplay() Replay {
 		}
 
 		roundEvents := make([]events.GameEvent, 0)
-		for eventIndex < len(rh.Events) && round.StartTick <= rh.Events[eventIndex].Tick && rh.Events[eventIndex].Tick <= round.EndTick {
+		if eventIndex < len(rh.Events) && rh.Events[eventIndex].Tick < round.StartTick {
+			eventIndex += (round.StartTick - rh.Events[eventIndex].Tick) // Fast forward to the start tick of the round
+		}
+
+		for eventIndex < len(rh.Events) && rh.Events[eventIndex].Tick <= round.EndTick {
 			rh.Events[eventIndex].Tick = rh.Events[eventIndex].Tick - round.StartTick // Convert to 0-based tick for the round
 			roundEvents = append(roundEvents, rh.Events[eventIndex])
 			eventIndex++

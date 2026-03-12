@@ -51,9 +51,10 @@ func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 	parser.RegisterEventHandler(rh.onSmokeStart)                 // Smoke start events
 	parser.RegisterEventHandler(rh.onSmokeEnd)                   // Smoke end events
 	parser.RegisterEventHandler(rh.onKill)                       // Track dead players
-	// parser.RegisterEventHandler(rh.onFireGrenadeStart)
 	parser.RegisterEventHandler(rh.onFlashExplode)
 	parser.RegisterEventHandler(rh.onHeExplode)
+	parser.RegisterEventHandler(rh.onPlayerTeamChange)
+	// parser.RegisterEventHandler(rh.onFireGrenadeStart)
 
 	return rh
 }
@@ -150,7 +151,7 @@ func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
 	frame := rh.getFrame(tick)
 	for _, player := range players {
 		// Only track alive players to compress replay size
-		if _, isDead := rh.dead[player.UserID]; !isDead {
+		if _, isDead := rh.dead[player.UserID]; !isDead && player.IsAlive() {
 			radarX, radarY := rh.mapMetdata.WorldToRadarCoords(player.Position().X, player.Position().Y)
 			frame.PlayerPositions[player.UserID] = playerposition.PlayerPosition{
 				X: radarX,
@@ -185,21 +186,12 @@ func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
 }
 
 func (rh *ReplayHandler) onGrenadeProjectileDestroyed(grenadeDestroyed event.GrenadeProjectileDestroy) {
-	// Record nades for all rounds
-	// if len(rh.Rounds) > 0 {
-	// 	return
-	// }
 	grenadeProjectile := grenadeDestroyed.Projectile
 	rh.NadeMetadata[grenadeProjectile.WeaponInstance.UniqueID2()] = metadata.NadeMetadata{
 		Type:    grenadeProjectile.WeaponInstance.String(),
 		Thrower: grenadeProjectile.Thrower.UserID,
 	}
-	// rh.NadeMetadata[grenadeProjectile.UniqueID()] = metadata.NadeMetadata{
-	// 	Type:    grenadeProjectile.WeaponInstance.String(),
-	// 	Thrower: grenadeProjectile.Thrower.UserID,
-	// }
 
-	// var prevTrajectoryEntry *common.TrajectoryEntry = nil
 	for _, trajectoryEntry := range grenadeProjectile.Trajectory {
 		frame := rh.getFrame(trajectoryEntry.Tick)
 		radarX, radarY := rh.mapMetdata.WorldToRadarCoords(trajectoryEntry.Position.X, trajectoryEntry.Position.Y)
@@ -220,6 +212,19 @@ func (rh *ReplayHandler) onKill(kill event.Kill) {
 		Data: events.KillEvent{
 			VictimID: kill.Victim.UserID,
 		},
+	})
+}
+
+func (rh *ReplayHandler) onPlayerTeamChange(playerTeamChange event.PlayerTeamChange) {
+	tick := rh.parser.GameState().IngameTick()
+	newTeamChange := events.TeamChangeEvent{
+		PlayerID: playerTeamChange.Player.UserID,
+		Team:     playerTeamChange.NewTeam,
+	}
+	rh.Events = append(rh.Events, events.GameEvent{
+		Tick: tick,
+		Type: events.EventTeamChange,
+		Data: newTeamChange,
 	})
 }
 
@@ -345,4 +350,8 @@ func (rh *ReplayHandler) PrintNadePositions() {
 		}
 		println("Nade positions recorded:", nadePositionsLengths)
 	}
+}
+
+func (rh *ReplayHandler) PrintEventLengths() {
+	println(len(rh.Events))
 }
