@@ -38,6 +38,7 @@ class GameState {
         this.nades   = {}; // { nadeId  -> { id, x, y, type } }
         this.blooms = {}; // { nadeId -> { x, y, type, timeRemaining } }
         this.infernos = {};
+        this.killfeed = new Killfeed();
     }
 
     // Pre-build a map of nadeId -> [{frameIndex, x, y}, ...] across all frames.
@@ -101,7 +102,7 @@ class GameState {
         }
     }
 
-    applyEvent (event) {
+    applyEvent (event, currentTime) {
         // TODO: apply other events besides death events
         // console.log("Applying event:", event);
         const eventData = event.Data
@@ -122,7 +123,11 @@ class GameState {
                 break;
             case 4: // Kill event
                 const victimId = eventData.VictimID;
-                this.players[victimId].alive = false;
+                if (this.players[victimId]) {
+                    this.players[victimId].alive = false;
+                    const victimName = this.playerMeta[victimId]?.Name || `Player ${victimId}`;
+                    this.killfeed.addKill(victimId, victimName, currentTime);
+                }
                 break;
             case 5: // HE explode
                 const nadeId5 = eventData.NadeId;
@@ -138,7 +143,44 @@ class GameState {
                 const infernoId = eventData.NadeId
                 this.infernos[infernoId] = { points: eventData.Points };
         }
-        
+
+    }
+}
+
+// ============================================================
+// KILLFEED
+// ============================================================
+class Killfeed {
+    constructor(maxEntries = 5, displayDuration = 5000) {
+        this.entries = []; // Array of { victimId, victimName, timestamp, opacity }
+        this.maxEntries = maxEntries;
+        this.displayDuration = displayDuration; // ms
+    }
+
+    addKill(victimId, victimName, currentTime) {
+        this.entries.unshift({
+            victimId,
+            victimName,
+            timestamp: currentTime,
+            opacity: 1.0
+        });
+
+        if (this.entries.length > this.maxEntries) {
+            this.entries.pop();
+        }
+    }
+
+    update(currentTime) {
+        // Remove expired kills and update opacity
+        this.entries = this.entries.filter(entry => {
+            const age = currentTime - entry.timestamp;
+            entry.opacity = Math.max(0, 1 - age / this.displayDuration);
+            return entry.opacity > 0;
+        });
+    }
+
+    getActiveEntries() {
+        return this.entries;
     }
 }
 
@@ -168,6 +210,16 @@ const RenderTheme = {
         flashRadius: 10,
         heExplode:"rgba(120,120,120,0.80)",
         heRadius: 10
+    },
+    killfeed: {
+        backgroundColor: "rgba(0,0,0,0.6)",
+        textColor: "#ffffff",
+        fontSize: "14px",
+        fontFamily: "Arial",
+        padding: 8,
+        lineHeight: 22,
+        marginRight: 10,
+        marginTop: 10
     }
 };
 // ============================================================
@@ -181,7 +233,7 @@ class Renderer {
         this.theme = theme;
     }
 
-    render(state) {
+    render(state, currentTime) {
         const { ctx, canvas, mapImg } = this;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(mapImg, 0, 0, canvas.width, canvas.height);
@@ -204,7 +256,7 @@ class Renderer {
             const pos = radarToCanvas(nade.x, nade.y, canvas, mapImg);
             const nadeColor = nade.type == "Smoke Grenade" ? this.theme.grenades.smoke : nade.type == "Flashbang" ? this.theme.grenades.flash : nade.type == "HE Grenade" ? this.theme.grenades.he : nade.type == "Molotov" || nade.type == "Incendiary Grenade" ? this.theme.grenades.molotov : "#000000";
             this._drawDot(pos.x, pos.y, nadeColor, 4);
-            
+
         }
 
         for (const bloom of Object.values(state.blooms)) {
@@ -222,6 +274,9 @@ class Renderer {
             }
             // console.log("Shifted points: ", points)
         }
+
+        // Render killfeed
+        this._drawKillfeed(canvas.width, 0);
     }
 
     _drawNadeBloom(x, y, type) {
@@ -323,6 +378,46 @@ class Renderer {
         this.ctx.textBaseline = "top"
         this.ctx.fillText(name, x, y - radius - 12);
     }
+
+    _drawKillfeed(canvasRight, canvasTop) {
+        const theme = this.theme.killfeed;
+        const entries = this.currentState?.killfeed.getActiveEntries() || [];
+
+        if (entries.length === 0) return;
+
+        const padding = theme.padding;
+        const lineHeight = theme.lineHeight;
+        const maxWidth = 180;
+
+        let totalHeight = padding * 2 + (entries.length * lineHeight);
+        let textStartX = canvasRight - maxWidth - theme.marginRight - padding;
+        let textStartY = canvasTop + theme.marginTop;
+
+        // Draw background
+        this.ctx.fillStyle = theme.backgroundColor;
+        this.ctx.fillRect(
+            canvasRight - maxWidth - theme.marginRight,
+            canvasTop + theme.marginTop,
+            maxWidth,
+            totalHeight
+        );
+
+        // Draw entries
+        this.ctx.font = theme.fontSize + " " + theme.fontFamily;
+        this.ctx.textAlign = "left";
+        this.ctx.textBaseline = "top";
+
+        entries.forEach((entry, index) => {
+            this.ctx.fillStyle = theme.textColor;
+            this.ctx.globalAlpha = entry.opacity;
+            this.ctx.fillText(
+                entry.victimName,
+                textStartX + padding,
+                textStartY + padding + (index * lineHeight)
+            );
+            this.ctx.globalAlpha = 1.0;
+        });
+    }
 }
 
 // ============================================================
@@ -346,15 +441,18 @@ async function init() {
 
     const state    = new GameState(replayData.roundMetadata[roundIndex], replayData.playerMetadata, replayData.nadeMetadata, frames);
     const renderer = new Renderer(canvas, mapImg, RenderTheme);
+    renderer.currentState = state; // Store state reference for killfeed rendering
 
     let currentFrame = 0;
     let accumulator  = 0;
     let lastTime     = performance.now();
+    let startTime    = performance.now();
 
     let eventIdx = 0;
 
     function loop(now) {
         const delta = now - lastTime;
+        const currentTime = now - startTime; // Time since animation started
         lastTime = now;
         accumulator += delta;
 
@@ -368,11 +466,12 @@ async function init() {
         const progress = accumulator / tickDuration;
         state.applyFrame(frames[currentFrame], currentFrame, progress);
         state.tickBlooms(delta);
+        state.killfeed.update(currentTime); // Update killfeed opacity
         while (eventIdx < events.length && events[eventIdx].Tick == currentFrame) {
-            state.applyEvent(events[eventIdx]);
+            state.applyEvent(events[eventIdx], currentTime);
             eventIdx++;
         }
-        renderer.render(state);
+        renderer.render(state, currentTime);
         requestAnimationFrame(loop);
     }
 
