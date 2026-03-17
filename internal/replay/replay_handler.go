@@ -54,7 +54,7 @@ func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 	parser.RegisterEventHandler(rh.onFlashExplode)
 	parser.RegisterEventHandler(rh.onHeExplode)
 	parser.RegisterEventHandler(rh.onPlayerTeamChange)
-	// parser.RegisterEventHandler(rh.onFireGrenadeStart)
+	// parser.RegisterEventHandler(rh.onFireGrenadeStart) 		 // Doesn't seem to trigger
 
 	return rh
 }
@@ -153,9 +153,11 @@ func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
 		// Only track alive players to compress replay size
 		if _, isDead := rh.dead[player.UserID]; !isDead && player.IsAlive() {
 			radarX, radarY := rh.mapMetdata.WorldToRadarCoords(player.Position().X, player.Position().Y)
+			yaw := player.ViewDirectionX()
 			frame.PlayerPositions[player.UserID] = playerposition.PlayerPosition{
-				X: radarX,
-				Y: radarY,
+				X:   radarX,
+				Y:   radarY,
+				Yaw: yaw,
 			}
 		}
 	}
@@ -184,6 +186,11 @@ func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
 	// }
 
 }
+
+// func (rh *ReplayHandler) onInfernoStart(infernoStart event.InfernoStart) {
+// 	tick := rh.parser.GameState().IngameTick()
+
+// }
 
 func (rh *ReplayHandler) onGrenadeProjectileDestroyed(grenadeDestroyed event.GrenadeProjectileDestroy) {
 	grenadeProjectile := grenadeDestroyed.Projectile
@@ -288,43 +295,43 @@ func (rh *ReplayHandler) onHeExplode(heExplode event.HeExplode) {
 	})
 }
 
-func (rh *ReplayHandler) onFireGrenadeStart(fireGrenadeStart event.FireGrenadeStart) {
-	tick := rh.parser.GameState().IngameTick()
-	radarX, radarY := rh.mapMetdata.WorldToRadarCoords(fireGrenadeStart.Position.X, fireGrenadeStart.Position.Y)
-	if fireGrenadeStart.Grenade == nil {
-		// println("No grenade found for fire start")
-		return
-	}
-	newFireStart := events.GrenadeEvent{
-		X:      radarX,
-		Y:      radarY,
-		NadeId: fireGrenadeStart.Grenade.UniqueID2(), // Using ULID as new Projectiles are not generated for GrenadeEvents
-	}
-	rh.Events = append(rh.Events, events.GameEvent{
-		Tick: tick,
-		Type: events.EventInfernoStart,
-		Data: newFireStart,
-	})
-}
+// func (rh *ReplayHandler) onFireGrenadeStart(fireGrenadeStart event.FireGrenadeStart) {
+// 	tick := rh.parser.GameState().IngameTick()
+// 	radarX, radarY := rh.mapMetdata.WorldToRadarCoords(fireGrenadeStart.Position.X, fireGrenadeStart.Position.Y)
+// 	if fireGrenadeStart.Grenade == nil {
+// 		// println("No grenade found for fire start")
+// 		return
+// 	}
+// 	newFireStart := events.GrenadeEvent{
+// 		X:      radarX,
+// 		Y:      radarY,
+// 		NadeId: fireGrenadeStart.Grenade.UniqueID2(), // Using ULID as new Projectiles are not generated for GrenadeEvents
+// 	}
+// 	rh.Events = append(rh.Events, events.GameEvent{
+// 		Tick: tick,
+// 		Type: events.EventInfernoStart,
+// 		Data: newFireStart,
+// 	})
+// }
 
-func (rh *ReplayHandler) onFireGrenadeEnd(fireGrenadeEnd event.FireGrenadeExpired) {
-	tick := rh.parser.GameState().IngameTick()
-	radarX, radarY := rh.mapMetdata.WorldToRadarCoords(fireGrenadeEnd.Position.X, fireGrenadeEnd.Position.Y)
-	if fireGrenadeEnd.Grenade == nil {
-		// println("No grenade found for fire end")
-		return
-	}
-	newFireStart := events.GrenadeEvent{
-		X:      radarX,
-		Y:      radarY,
-		NadeId: fireGrenadeEnd.Grenade.UniqueID2(), // Using ULID as new Projectiles are not generated for GrenadeEvents
-	}
-	rh.Events = append(rh.Events, events.GameEvent{
-		Tick: tick,
-		Type: events.EventInfernoStart,
-		Data: newFireStart,
-	})
-}
+// func (rh *ReplayHandler) onFireGrenadeEnd(fireGrenadeEnd event.FireGrenadeExpired) {
+// 	tick := rh.parser.GameState().IngameTick()
+// 	radarX, radarY := rh.mapMetdata.WorldToRadarCoords(fireGrenadeEnd.Position.X, fireGrenadeEnd.Position.Y)
+// 	if fireGrenadeEnd.Grenade == nil {
+// 		// println("No grenade found for fire end")
+// 		return
+// 	}
+// 	newFireStart := events.GrenadeEvent{
+// 		X:      radarX,
+// 		Y:      radarY,
+// 		NadeId: fireGrenadeEnd.Grenade.UniqueID2(), // Using ULID as new Projectiles are not generated for GrenadeEvents
+// 	}
+// 	rh.Events = append(rh.Events, events.GameEvent{
+// 		Tick: tick,
+// 		Type: events.EventInfernoStart,
+// 		Data: newFireStart,
+// 	})
+// }
 
 func (rh *ReplayHandler) CheckNadeIDs() {
 	for _, gameEvent := range rh.Events {

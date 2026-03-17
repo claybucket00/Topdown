@@ -16,6 +16,7 @@ type NadePosition struct {
 }
 
 type PlayerPosition struct {
-	X float64 `json:"x"`
-	Y float64 `json:"y"`
+	X   float64 `json:"x"`
+	Y   float64 `json:"y"`
+	Yaw float32 `json:"yaw"`
 }

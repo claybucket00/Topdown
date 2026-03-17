@@ -78,6 +78,7 @@ class GameState {
                 team: this.playerTeams[id],
                 x:    pos.x,
                 y:    pos.y,
+                yaw:  pos.yaw,
                 alive: alive,
             };
         }
@@ -145,7 +146,9 @@ const RenderTheme = {
         CT: "#2e6bb0",
         T: "#aeb821",
         outline: "#000000",
-        radius: 6
+        radius: 6,
+        arrowAngle: 22.5,
+        arrowColor: "#ffffff"
     },
     grenades: {
         flash: "#ffffff",
@@ -182,11 +185,13 @@ class Renderer {
         for (const player of Object.values(state.players)) {
             const pos = radarToCanvas(player.x, player.y, canvas, mapImg);
             if (player.team !== 2 && player.team !== 3) continue; // Skip spectators and unassigned players
+            const color = player.team === 3 ? this.theme.players.CT : this.theme.players.T;
             if (player.alive) {
-                this._drawDot(pos.x, pos.y, player.team === 3 ? this.theme.players.CT : this.theme.players.T, this.theme.players.radius);
+                this._drawArrow(pos.x, pos.y, player.yaw, this.theme.players.arrowColor, this.theme.players.radius);
+                this._drawDot(pos.x, pos.y, color, this.theme.players.radius);
                 this._drawName(pos.x, pos.y, this.theme.players.radius, player.name)
             } else {
-                this._drawX(pos.x, pos.y, player.team === 3 ? this.theme.players.CT : this.theme.players.T, this.theme.players.radius);
+                this._drawX(pos.x, pos.y, color, this.theme.players.radius);
             }
 
         }
@@ -253,6 +258,35 @@ class Renderer {
         this.ctx.fill();
     }
 
+    _drawArrow(x, y, yawDeg, color, dotRadius) {
+        const arrowLength = dotRadius * 0.45;
+        const radians = yawDeg * Math.PI / 180;
+        const angleOffset = this.theme.players.arrowAngle * Math.PI / 180;
+        const dx = Math.cos(radians);
+        const dy = -Math.sin(radians);
+        const rightX = Math.cos(radians + angleOffset);
+        const rightY = -Math.sin(radians + angleOffset);
+        const leftX = Math.cos(radians - angleOffset);
+        const leftY = -Math.sin(radians - angleOffset);
+        const startX = x + rightX * dotRadius;
+        const startY = y + rightY * dotRadius;
+        const tipX = x + dx * (dotRadius + arrowLength);
+        const tipY = y + dy * (dotRadius + arrowLength);
+        const endX = x + leftX * dotRadius;
+        const endY = y + leftY * dotRadius;
+
+        this.ctx.beginPath();
+        this.ctx.strokeStyle = color;
+        this.ctx.lineWidth = 2;
+        this.ctx.moveTo(startX, startY);
+        this.ctx.lineTo(tipX, tipY);
+        this.ctx.lineTo(endX, endY);
+        this.ctx.closePath();
+        this.ctx.fillStyle = color;
+        this.ctx.fill();
+        this.ctx.stroke();
+    }
+
     _drawX(x, y, color, radius) {
         this.ctx.beginPath();
         this.ctx.strokeStyle = color;
@@ -281,7 +315,7 @@ class Renderer {
         this.ctx.fillStyle = "white";
         this.ctx.textAlign = "center";
         this.ctx.textBaseline = "top"
-        this.ctx.fillText(name, x, y - radius - 10);
+        this.ctx.fillText(name, x, y - radius - 12);
     }
 }
 
