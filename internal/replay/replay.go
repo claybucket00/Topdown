@@ -23,7 +23,7 @@ type Replay struct {
 func (rh *ReplayHandler) GenerateReplay() Replay {
 	replay := Replay{
 		MapName:        rh.MapName,
-		TickRate:       rh.TickRate,
+		TickRate:       rh.GetTickRate(),
 		PlayerMetadata: rh.PlayerMetadata,
 		NadeMetadata:   rh.NadeMetadata,
 		Events:         make([][]events.GameEvent, len(rh.Rounds)),

@@ -22,6 +22,7 @@ const (
 	EventKill
 	EventHe
 	EventTeamChange
+	EventInferno
 	EventInfernoStart
 	EventInfernoEnd
 )

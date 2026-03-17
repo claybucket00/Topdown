@@ -9,10 +9,10 @@ import (
 )
 
 // https://www.hltv.org/matches/2382614/spirit-vs-mouz-blasttv-austin-major-2025
-// var DEMO_PATH = "./demos/spirit-vs-mouz-m1-mirage.dem"
+var DEMO_PATH = "./demos/spirit-vs-mouz-m1-mirage.dem"
 
 // var DEMO_PATH = "./demos/furia-vs-vitality-m1-mirage.dem"
-var DEMO_PATH = "./demos/g2-vs-fut-m1-mirage.dem"
+// var DEMO_PATH = "./demos/g2-vs-fut-m1-mirage.dem"
 
 func main() {
 	f, err := os.Open(DEMO_PATH)

@@ -8,6 +8,7 @@ import (
 	playerposition "topdown/internal/playerposition"
 	round "topdown/internal/round"
 
+	r2 "github.com/golang/geo/r2"
 	demoinfocs "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs"
 	common "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	event "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/events"
@@ -22,7 +23,6 @@ type ReplayHandler struct {
 	Frames         map[int]*framedata.FrameData // Key: Tick, Val: FrameData for that tick
 	Events         []events.GameEvent
 	MapName        string
-	TickRate       float64
 	prevTick       int
 	dead           map[int]struct{} // Map to track players who are dead so we can skip collecting their position
 	mapMetdata     metadata.MapMetadata
@@ -61,7 +61,7 @@ func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 
 func (rh *ReplayHandler) getMapName(msg *msg.CSVCMsg_ServerInfo) {
 	rh.MapName = msg.GetMapName()
-	rh.TickRate = rh.parser.TickRate()
+	// rh.TickRate = rh.parser.TickRate() // Doesn't appear deterministic??? Running multiple times on same demo file sometimes results in zero.
 
 	rh.mapMetdata = metadata.GetMapMetadata(rh.MapName)
 }
@@ -164,26 +164,31 @@ func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
 
 	// TODO: Depending on the complexity, might need to refactor this function to behave like smokes. Currently we track infernos on ticks so we can get accurate 2D convex hulls for rendering the spread.
 	// Track infernos.
-	// currentInfernos := rh.parser.GameState().Infernos()
-	// if len(currentInfernos) != 0 {
-	// 	for _, inferno := range currentInfernos {
-	// 		points := inferno.Fires().Active().ConvexHull2D()
-	// 		for i, point := range points {
-	// 			radarX, radarY := rh.mapMetdata.WorldToRadarCoords(point.X, point.Y)
-	// 			points[i].X = radarX
-	// 			points[i].Y = radarY
-	// 		}
-	// 		infernoData := events.InfernoEvent{
-	// 			Points: points,
-	// 			NadeId: inferno.UniqueID(),
-	// 		}
-	// 		rh.Events = append(rh.Events, events.GameEvent{
-	// 			Tick: tick,
-	// 			Type: events.EventInferno,
-	// 			Data: infernoData,
-	// 		})
-	// 	}
-	// }
+	currentInfernos := rh.parser.GameState().Infernos()
+	if len(currentInfernos) != 0 {
+		for _, inferno := range currentInfernos {
+			fires := inferno.Fires().Active().List()
+			points := make([]r2.Point, len(fires))
+			for i, fire := range fires {
+				radarX, radarY := rh.mapMetdata.WorldToRadarCoords(fire.Vector.X, fire.Vector.Y)
+				points[i] = r2.Point{X: radarX, Y: radarY}
+			}
+			// for i, point := range points {
+			// 	radarX, radarY := rh.mapMetdata.WorldToRadarCoords(point.X, point.Y)
+			// 	points[i].X = radarX
+			// 	points[i].Y = radarY
+			// }
+			infernoData := events.InfernoEvent{
+				Points: points,
+				NadeId: inferno.UniqueID(),
+			}
+			rh.Events = append(rh.Events, events.GameEvent{
+				Tick: tick,
+				Type: events.EventInferno,
+				Data: infernoData,
+			})
+		}
+	}
 
 }
 
@@ -293,6 +298,10 @@ func (rh *ReplayHandler) onHeExplode(heExplode event.HeExplode) {
 		Type: events.EventHe,
 		Data: newHeEvent,
 	})
+}
+
+func (rh *ReplayHandler) GetTickRate() float64 {
+	return rh.parser.TickRate()
 }
 
 // func (rh *ReplayHandler) onFireGrenadeStart(fireGrenadeStart event.FireGrenadeStart) {

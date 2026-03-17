@@ -37,6 +37,7 @@ class GameState {
         // }
         this.nades   = {}; // { nadeId  -> { id, x, y, type } }
         this.blooms = {}; // { nadeId -> { x, y, type, timeRemaining } }
+        this.infernos = {};
     }
 
     // Pre-build a map of nadeId -> [{frameIndex, x, y}, ...] across all frames.
@@ -133,6 +134,9 @@ class GameState {
                 const newTeam = eventData.Team
                 this.players[playerId].team = newTeam
                 break;
+            case 7: // Inferno
+                const infernoId = eventData.NadeId
+                this.infernos[infernoId] = { points: eventData.Points };
         }
         
     }
@@ -208,14 +212,16 @@ class Renderer {
             this._drawNadeBloom(pos.x, pos.y, bloom.type);
         }
 
-        // for (const hull of Object.values(state.hulls)) {
-        //     // console.log("Original points: ", hull.points)
-        //     const points = hull.points.map((point) => radarToCanvas(point.X, point.Y, this.canvas, this.mapImg))
-        //     if (points.length != 0) {
-        //         this._drawHull(points, this.theme.effects.fire)
-        //     }
-        //     // console.log("Shifted points: ", points)
-        // }
+        for (const inferno of Object.values(state.infernos)) {
+            // console.log("Original points: ", hull.points)
+            const points = inferno.points.map((point) => radarToCanvas(point.X, point.Y, this.canvas, this.mapImg))
+            if (points.length != 0) {
+                for (const point of points) {
+                    this._drawDot(point.x, point.y, this.theme.effects.fire, 5)
+                }
+            }
+            // console.log("Shifted points: ", points)
+        }
     }
 
     _drawNadeBloom(x, y, type) {
