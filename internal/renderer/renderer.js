@@ -123,10 +123,12 @@ class GameState {
                 break;
             case 4: // Kill event
                 const victimId = eventData.VictimID;
+                const attackerId = eventData?.attacker;
                 if (this.players[victimId]) {
                     this.players[victimId].alive = false;
                     const victimName = this.playerMeta[victimId]?.Name || `Player ${victimId}`;
-                    this.killfeed.addKill(victimId, victimName, currentTime);
+                    const attackerName = this.playerMeta[attackerId]?.Name || `Player ${attackerId}`;
+                    this.killfeed.addKill(attackerId, attackerName, victimId, victimName, currentTime);
                 }
                 break;
             case 5: // HE explode
@@ -152,13 +154,15 @@ class GameState {
 // ============================================================
 class Killfeed {
     constructor(maxEntries = 5, displayDuration = 5000) {
-        this.entries = []; // Array of { victimId, victimName, timestamp, opacity }
+        this.entries = []; // Array of { attackerId, attackerName, victimId, victimName, timestamp, opacity }
         this.maxEntries = maxEntries;
         this.displayDuration = displayDuration; // ms
     }
 
-    addKill(victimId, victimName, currentTime) {
+    addKill(attackerId, attackerName, victimId, victimName, currentTime) {
         this.entries.unshift({
+            attackerId,
+            attackerName,
             victimId,
             victimName,
             timestamp: currentTime,
@@ -411,7 +415,7 @@ class Renderer {
             this.ctx.fillStyle = theme.textColor;
             this.ctx.globalAlpha = entry.opacity;
             this.ctx.fillText(
-                entry.victimName,
+                entry.attackerName + " -> " + entry.victimName,
                 textStartX + padding,
                 textStartY + padding + (index * lineHeight)
             );

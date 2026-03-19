@@ -4,6 +4,8 @@ import (
 	common "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 )
 
+type PlayerID int // TODO: Refactor code to use PlayerID type instead of raw int
+
 type NadePath struct {
 	weapon   common.Equipment
 	path     []common.TrajectoryEntry

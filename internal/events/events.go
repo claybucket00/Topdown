@@ -1,6 +1,8 @@
 package events
 
 import (
+	player "topdown/internal/playerposition"
+
 	r2 "github.com/golang/geo/r2"
 	common "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	ulid "github.com/oklog/ulid/v2"
@@ -9,7 +11,7 @@ import (
 type GameEvent struct {
 	Tick int
 	Type EventType
-	Data any
+	Data any // TODO: refactor this to specific types
 }
 
 type EventType int
@@ -45,7 +47,16 @@ type GrenadeEvent struct {
 }
 
 type KillEvent struct {
-	VictimID int
+	VictimID      int
+	AttackerID    *player.PlayerID `json:"attacker,omitempty"`
+	AssisterID    *player.PlayerID `json:"assister,omitempty"`
+	Weapon        string
+	IsWallbang    bool
+	IsHeadshot    bool
+	AssistedFlash bool
+	AttackerBlind bool
+	NoScope       bool
+	ThroughSmoke  bool
 }
 
 type InfernoEvent struct {

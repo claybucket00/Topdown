@@ -7,6 +7,7 @@ import (
 	metadata "topdown/internal/metadata"
 	playerposition "topdown/internal/playerposition"
 	round "topdown/internal/round"
+	"topdown/internal/utility"
 
 	r2 "github.com/golang/geo/r2"
 	demoinfocs "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs"
@@ -215,14 +216,33 @@ func (rh *ReplayHandler) onGrenadeProjectileDestroyed(grenadeDestroyed event.Gre
 }
 
 func (rh *ReplayHandler) onKill(kill event.Kill) {
-	if kill.Victim != nil {
-		rh.dead[kill.Victim.UserID] = struct{}{}
+	if kill.Victim == nil {
+		return // Can be nil if demo is partially corrupt
 	}
+	rh.dead[kill.Victim.UserID] = struct{}{}
+	var attackerID *playerposition.PlayerID
+	if kill.Killer != nil {
+		attackerID = utility.Ptr[playerposition.PlayerID](playerposition.PlayerID(kill.Killer.UserID))
+	}
+	var assisterID *playerposition.PlayerID
+	if kill.Assister != nil {
+		assisterID = utility.Ptr[playerposition.PlayerID](playerposition.PlayerID(kill.Assister.UserID))
+	}
+
 	rh.Events = append(rh.Events, events.GameEvent{
 		Tick: rh.parser.GameState().IngameTick(),
 		Type: events.EventKill,
 		Data: events.KillEvent{
-			VictimID: kill.Victim.UserID,
+			VictimID:      kill.Victim.UserID,
+			AttackerID:    attackerID,
+			AssisterID:    assisterID,
+			Weapon:        kill.Weapon.String(),
+			IsWallbang:    kill.IsWallBang(),
+			IsHeadshot:    kill.IsHeadshot,
+			AssistedFlash: kill.AssistedFlash,
+			AttackerBlind: kill.AttackerBlind,
+			NoScope:       kill.NoScope,
+			ThroughSmoke:  kill.ThroughSmoke,
 		},
 	})
 }
