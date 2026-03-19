@@ -24,7 +24,7 @@ class GameState {
         this.nadeMeta = nadeMetadata;
         this.nadeTrajectories = this._buildNadeTrajectories(frames);
 
-        this.players = {}; // { playerId -> { id, name, team, x, y, alive} }
+        this.players = {}; // { playerId -> { id, name, team, x, y, alive, health, armor} }
         // for (const playerId in this.playerMeta) {
         //     this.players[playerId] = {
         //         playerId,
@@ -74,6 +74,8 @@ class GameState {
         // this.players = {};
         for (const [id, pos] of Object.entries(frameData.player_positions)) {
             const alive = this.players[id]?.alive ?? true; // Preserve alive status if player is missing from frame (e.g. due to death)
+            const health = this.players[id]?.health ?? 100;
+            const armor = this.players[id]?.armor ?? 0;
             this.players[id] = {
                 id,
                 name: this.playerMeta[id]?.Name,
@@ -82,6 +84,8 @@ class GameState {
                 y:    pos.y,
                 yaw:  pos.yaw,
                 alive: alive,
+                health: health,
+                armor: armor,
             };
         }
 
@@ -137,13 +141,20 @@ class GameState {
                 delete this.nadeTrajectories[nadeId5];
                 break;
             case 6: // Team change event
-                const playerId = eventData.PlayerID
-                const newTeam = eventData.Team
-                this.players[playerId].team = newTeam
+                const playerId = eventData.PlayerID;
+                const newTeam = eventData.Team;
+                this.players[playerId].team = newTeam;
                 break;
             case 7: // Inferno
-                const infernoId = eventData.NadeId
+                const infernoId = eventData.NadeId;
                 this.infernos[infernoId] = { points: eventData.Points };
+                break;
+            case 8: // Player Damage
+                const hurtPlayerId = eventData.playerID;
+                const health = eventData.health;
+                //console.log(hurtPlayerId)
+                this.players[hurtPlayerId].health = health
+                break;
         }
 
     }
@@ -386,6 +397,7 @@ class Renderer {
     _drawKillfeed(canvasRight, canvasTop) {
         const theme = this.theme.killfeed;
         const entries = this.currentState?.killfeed.getActiveEntries() || [];
+        const players = this.currentState?.players || [];
 
         if (entries.length === 0) return;
 
@@ -412,16 +424,133 @@ class Renderer {
         this.ctx.textBaseline = "top";
 
         entries.forEach((entry, index) => {
-            this.ctx.fillStyle = theme.textColor;
+            const attackerColor = players[entry.attackerId].team == 3 ? this.theme.players.CT : this.theme.players.T;
+            const victimColor = players[entry.victimId].team == 3 ? this.theme.players.CT : this.theme.players.T;
             this.ctx.globalAlpha = entry.opacity;
+
+            let currentX = textStartX + padding
+            this.ctx.fillStyle = attackerColor;
             this.ctx.fillText(
-                entry.attackerName + " -> " + entry.victimName,
-                textStartX + padding,
+                entry.attackerName,
+                currentX,
+                textStartY + padding + (index * lineHeight)
+            );
+            // TODO: Add support for detailed killfeeds
+            currentX += this.ctx.measureText(entry.attackerName).width
+            this.ctx.fillStyle = theme.textColor;
+            this.ctx.fillText(
+                " -> ",
+                currentX,
+                textStartY + padding + (index * lineHeight)
+            );
+            currentX += this.ctx.measureText(" -> ").width
+            this.ctx.fillStyle = victimColor;
+            this.ctx.fillText(
+                entry.victimName,
+                currentX,
                 textStartY + padding + (index * lineHeight)
             );
             this.ctx.globalAlpha = 1.0;
         });
     }
+}
+
+// ============================================================
+// PLAYER CARD MANAGER
+// ============================================================
+class PlayerCardManager {
+    constructor(playerMetadata, playerTeams) {
+        this.playerMetadata = playerMetadata;
+        this.playerTeams = playerTeams;
+        this.cardCache = {}; // { playerId -> DOM element }
+        this.ctContainer = document.getElementById('ct-players');
+        this.tContainer = document.getElementById('t-players');
+    }
+
+    initialize() {
+        // Clear existing cards
+        this.ctContainer.innerHTML = '';
+        this.tContainer.innerHTML = '';
+        this.cardCache = {};
+
+        // Create cards for each player, organized by team
+        for (const [playerId, metadata] of Object.entries(this.playerMetadata)) {
+            const team = this.playerTeams[playerId];
+            const container = team === 3 ? this.ctContainer : this.tContainer;
+
+            const card = this._createPlayerCard(playerId, metadata.Name);
+            this.cardCache[playerId] = card;
+            container.appendChild(card);
+        }
+    }
+
+    _createPlayerCard(playerId, playerName) {
+        const card = document.createElement('div');
+        card.className = 'player-stats';
+        card.id = `player-card-${playerId}`;
+        card.innerHTML = `
+            <div class="player-name">${playerName}</div>
+            <div class="player-equipment">
+                <!-- Equipment will be added here later -->
+            </div>
+            <div class="player-health">100</div>
+        `;
+        return card;
+    }
+
+    updatePlayerStatus(playerId, player) {
+        const card = this.cardCache[playerId];
+        if (!card) return;
+
+        // Update visual feedback based on alive status
+        if (player.alive) {
+            card.style.opacity = '1';
+            card.style.borderColor = '#333';
+        } else {
+            card.style.opacity = '0.5';
+            card.style.borderColor = '#666';
+        }
+
+        card.querySelector('.player-health').textContent = player.health
+    }
+
+    updatePlayerCard(playerId, updates) {
+        const card = this.cardCache[playerId];
+        if (!card) return;
+
+        // Updates object can contain: equipment, hp, armor, etc.
+        // For now, this is a placeholder for future expansion
+    }
+}
+
+// ============================================================
+// UTILITY
+// ============================================================
+function formatMillisecondsToMSS(totalMs) {
+    const totalTime = (totalMs / 1000) / 60
+    const totalMinutes = Math.floor(totalTime);
+    const totalSeconds = Math.floor((totalTime - totalMinutes) * 60);
+    
+    return`${String(totalMinutes)}:${String(totalSeconds).padStart(2, '0')}`;
+}
+
+function mssToMilliseconds(timeString) {
+    // console.log(timeString)
+    const parts = timeString.split(':');
+    // if (parts.length !== 2) {
+    //     console.error("Invalid time format. Use 'M:SS' or 'MM:SS'.");
+    //     return NaN;
+    // }
+
+    // console.log(parts[0])
+    // console.log(parts[1])
+    const minutes = Number(parts[0]);
+    const seconds = Number(parts[1]);
+
+    const totalSeconds = minutes * 60 + seconds;
+    const totalMilliseconds = totalSeconds * 1000;
+
+    return totalMilliseconds;
 }
 
 // ============================================================
@@ -442,23 +571,57 @@ async function init() {
     const events      = replayData.events[roundIndex];
     const tickRate     = replayData.tickRate;
     const tickDuration = 1000 / tickRate; // ms per tick (~15.6ms at 64 tick)
+    const totalTime = frames.length / tickRate * 1000
 
     const state    = new GameState(replayData.roundMetadata[roundIndex], replayData.playerMetadata, replayData.nadeMetadata, frames);
     const renderer = new Renderer(canvas, mapImg, RenderTheme);
     renderer.currentState = state; // Store state reference for killfeed rendering
 
+    const cardManager = new PlayerCardManager(replayData.playerMetadata, replayData.roundMetadata[roundIndex].player_to_teams);
+    cardManager.initialize(); // Populate initial player cards
+
     let currentFrame = 0;
     let accumulator  = 0;
     let lastTime     = performance.now();
     let startTime    = performance.now();
+    let isPaused     = false;
+    let elapsedTime  = 0; // Track elapsed time separately from frame accumulator
 
     let eventIdx = 0;
 
+    // Setup play/pause button
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    playPauseBtn.addEventListener('click', () => {
+        isPaused = !isPaused;
+        playPauseBtn.textContent = isPaused ? '▶' : '⏸';
+        if (!isPaused) {
+            lastTime = performance.now(); // Reset time when resuming
+        }
+    });
+
+    // Setup time scrubbing bar
+    const totalTimeDisplay = document.getElementById('total-time');
+    // const totalMinutes = Math.floor(totalTime);
+    // const totalSeconds = Math.floor((totalTime - totalMinutes) * 60);
+    // const displayTotalTime = `${String(totalMinutes)}:${String(totalSeconds).padStart(2, '0')}`;
+    totalTimeDisplay.textContent = formatMillisecondsToMSS(totalTime);
+
+    const currentTimeDisplay = document.getElementById('current-time');
+
     function loop(now) {
         const delta = now - lastTime;
-        const currentTime = now - startTime; // Time since animation started
         lastTime = now;
-        accumulator += delta;
+
+        // Only update accumulator and time when not paused
+        if (!isPaused) {
+            accumulator += delta;
+            elapsedTime += delta; // Track total elapsed time
+        }
+
+        // Update time display using the dedicated elapsed time tracker
+        currentTimeDisplay.textContent = formatMillisecondsToMSS(elapsedTime);
+
+        const currentTime = now - startTime; // Time since animation started
 
         while (accumulator >= tickDuration) {
             accumulator -= tickDuration;
@@ -475,6 +638,12 @@ async function init() {
             state.applyEvent(events[eventIdx], currentTime);
             eventIdx++;
         }
+
+        // Update player card status based on alive state
+        for (const [playerId, player] of Object.entries(state.players)) {
+            cardManager.updatePlayerStatus(playerId, player);
+        }
+
         renderer.render(state, currentTime);
         requestAnimationFrame(loop);
     }

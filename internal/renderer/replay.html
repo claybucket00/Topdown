@@ -10,7 +10,7 @@
         <div class="main-layout">
             <!-- Left sidebar for CT equipment -->
             <div class="sidebar sidebar-left">
-                <div class="team-header">CT</div>
+                <div class="team-header ct">CT</div>
                 <div class="players-container" id="ct-players"></div>
             </div>
 
@@ -23,14 +23,17 @@
 
             <!-- Right sidebar for T equipment -->
             <div class="sidebar sidebar-right">
-                <div class="team-header">T</div>
+                <div class="team-header t">T</div>
                 <div class="players-container" id="t-players"></div>
             </div>
         </div>
 
         <!-- Bottom replay bar -->
         <div class="replay-bar">
-            <input type="range" id="replay-progress" class="progress-slider" min="0" max="100" value="0">
+            <div class="replay-controls">
+                <button id="play-pause-btn" class="play-pause-btn" title="Play/Pause">⏸</button>
+                <input type="range" id="replay-progress" class="progress-slider" min="0" max="100" value="0">
+            </div>
             <div class="time-display">
                 <span id="current-time">0:00</span> / <span id="total-time">0:00</span>
             </div>

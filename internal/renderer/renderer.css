@@ -61,6 +61,16 @@ html, body {
     margin-bottom: 10px;
 }
 
+.team-header.ct {
+    color: #2e6bb0;
+    border-bottom-color: #2e6bb0;
+}
+
+.team-header.t {
+    color: #aeb821;
+    border-bottom-color: #aeb821;
+}
+
 .players-container {
     display: flex;
     flex-direction: column;
@@ -73,6 +83,12 @@ html, body {
     border-radius: 3px;
     padding: 8px;
     font-size: 12px;
+    transition: opacity 0.3s ease, border-color 0.3s ease, background-color 0.3s ease;
+}
+
+.player-stats:hover {
+    background-color: #1a1a1a;
+    border-color: #555;
 }
 
 .player-name {
@@ -114,6 +130,37 @@ html, body {
     height: 6px;
     cursor: pointer;
     accent-color: #ff6b35;
+}
+
+.replay-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    justify-content: center;
+}
+
+.play-pause-btn {
+    background-color: #333;
+    border: 1px solid #555;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    min-width: 40px;
+    text-align: center;
+}
+
+.play-pause-btn:hover {
+    background-color: #444;
+    border-color: #666;
+}
+
+.play-pause-btn:active {
+    background-color: #222;
 }
 
 .time-display {

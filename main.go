@@ -31,7 +31,7 @@ func main() {
 		log.Panicf("Failed to parse demo: %v", err)
 	}
 
-	rh.PrintEventLengths()
+	// rh.PrintEventLengths()
 	replay := rh.GenerateReplay()
 	// replay.PrintNadeData()
 	err = replay.SerializeReplay("./internal/renderer/output.json")

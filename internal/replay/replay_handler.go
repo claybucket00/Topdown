@@ -55,6 +55,7 @@ func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 	parser.RegisterEventHandler(rh.onFlashExplode)
 	parser.RegisterEventHandler(rh.onHeExplode)
 	parser.RegisterEventHandler(rh.onPlayerTeamChange)
+	parser.RegisterEventHandler(rh.onPlayerDamage)
 	// parser.RegisterEventHandler(rh.onFireGrenadeStart) 		 // Doesn't seem to trigger
 
 	return rh
@@ -244,6 +245,25 @@ func (rh *ReplayHandler) onKill(kill event.Kill) {
 			NoScope:       kill.NoScope,
 			ThroughSmoke:  kill.ThroughSmoke,
 		},
+	})
+}
+
+func (rh *ReplayHandler) onPlayerDamage(playerHurt event.PlayerHurt) {
+	if playerHurt.Player == nil {
+		return
+	}
+	tick := rh.parser.GameState().IngameTick()
+	playerDamage := events.DamageEvent{
+		PlayerID:          utility.Ptr[playerposition.PlayerID](playerposition.PlayerID(playerHurt.Player.UserID)),
+		Health:            playerHurt.Health,
+		Armor:             playerHurt.Armor,
+		HealthDamageTaken: playerHurt.HealthDamageTaken,
+		ArmorDamageTaken:  playerHurt.ArmorDamageTaken,
+	}
+	rh.Events = append(rh.Events, events.GameEvent{
+		Tick: tick,
+		Type: events.EventDamage,
+		Data: playerDamage,
 	})
 }
 

@@ -25,6 +25,7 @@ const (
 	EventHe
 	EventTeamChange
 	EventInferno
+	EventDamage
 	EventInfernoStart
 	EventInfernoEnd
 )
@@ -57,6 +58,14 @@ type KillEvent struct {
 	AttackerBlind bool
 	NoScope       bool
 	ThroughSmoke  bool
+}
+
+type DamageEvent struct {
+	PlayerID          *player.PlayerID `json:"playerID"`
+	Health            int              `json:"health"`
+	Armor             int              `json:"armor"`
+	HealthDamageTaken int              `json:"healthdamage"`
+	ArmorDamageTaken  int              `json:"armordamage"`
 }
 
 type InfernoEvent struct {
