@@ -11,7 +11,7 @@ import (
 type GameEvent struct {
 	Tick int
 	Type EventType
-	Data any // TODO: refactor this to specific types
+	Data any // TODO: refactor this to specific types ... maybe
 }
 
 type EventType int
@@ -26,8 +26,7 @@ const (
 	EventTeamChange
 	EventInferno
 	EventDamage
-	EventInfernoStart
-	EventInfernoEnd
+	EventPlayerFlashed
 )
 
 type TeamChangeEvent struct {
@@ -71,4 +70,9 @@ type DamageEvent struct {
 type InfernoEvent struct {
 	Points []r2.Point // 2D convex hull of all the fires active in the inferno.
 	NadeId int64      // We cannot use the usual ULID id as infernos are seperate entities than incendiary grenades.
+}
+
+type FlashEvent struct {
+	PlayerID *player.PlayerID `json:"playerID"` // ID of the player who is flashed
+	Duration int64            `json:"duration"` // Blindness duration (milliseconds)
 }

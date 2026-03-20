@@ -39,6 +39,7 @@ class GameState {
         this.blooms = {}; // { nadeId -> { x, y, type, timeRemaining } }
         this.infernos = {};
         this.killfeed = new Killfeed();
+        this.flashedPlayers = {}; // { playerId -> { remainingTime } }
     }
 
     // Pre-build a map of nadeId -> [{frameIndex, x, y}, ...] across all frames.
@@ -106,6 +107,15 @@ class GameState {
         }
     }
 
+    tickFlashedPlayers(delta) {
+        for (const [playerId, flash] of Object.entries(this.flashedPlayers)) {
+            flash.remainingTime -= delta;
+            if (flash.remainingTime <= 0) {
+                delete this.flashedPlayers[playerId];
+            }
+        }
+    }
+
     applyEvent (event, currentTime) {
         // TODO: apply other events besides death events
         // console.log("Applying event:", event);
@@ -153,6 +163,11 @@ class GameState {
                 const hurtPlayerId = eventData.playerID;
                 const health = eventData.health;
                 this.players[hurtPlayerId].health = health
+                break;
+            case 9: // Player Flashed
+                const flashedPlayerId = eventData.playerID;
+                const duration = eventData.duration;
+                this.flashedPlayers[flashedPlayerId] = { remainingTime: duration };
                 break;
         }
     }
@@ -213,7 +228,8 @@ const RenderTheme = {
         flash: "#ffffff",
         smoke: "#aaaaaa",
         he: "#ff9900",
-        molotov: "#ff3300"
+        molotov: "#ff3300",
+        decoy:"#91580d"
     },
     effects: {
         smokeColor: "rgba(120,120,120,0.70)",
@@ -259,6 +275,10 @@ class Renderer {
                 this._drawArrow(pos.x, pos.y, player.yaw, this.theme.players.arrowColor, this.theme.players.radius);
                 this._drawDot(pos.x, pos.y, color, this.theme.players.radius);
                 this._drawName(pos.x, pos.y, this.theme.players.radius, player.name)
+                // Draw flashed effect if player is blinded
+                if (state.flashedPlayers[player.id]) {
+                    this._drawFlashedEffect(pos.x, pos.y, state.flashedPlayers[player.id]);
+                }
             } else {
                 this._drawX(pos.x, pos.y, color, this.theme.players.radius);
             }
@@ -267,7 +287,7 @@ class Renderer {
 
         for (const nade of Object.values(state.nades)) {
             const pos = radarToCanvas(nade.x, nade.y, canvas, mapImg);
-            const nadeColor = nade.type == "Smoke Grenade" ? this.theme.grenades.smoke : nade.type == "Flashbang" ? this.theme.grenades.flash : nade.type == "HE Grenade" ? this.theme.grenades.he : nade.type == "Molotov" || nade.type == "Incendiary Grenade" ? this.theme.grenades.molotov : "#000000";
+            const nadeColor = nade.type == "Smoke Grenade" ? this.theme.grenades.smoke : nade.type == "Flashbang" ? this.theme.grenades.flash : nade.type == "HE Grenade" ? this.theme.grenades.he : nade.type == "Molotov" || nade.type == "Incendiary Grenade" ? this.theme.grenades.molotov : this.theme.grenades.decoy;
             this._drawDot(pos.x, pos.y, nadeColor, 4);
 
         }
@@ -390,6 +410,18 @@ class Renderer {
         this.ctx.textAlign = "center";
         this.ctx.textBaseline = "top"
         this.ctx.fillText(name, x, y - radius - 12);
+    }
+
+    _drawFlashedEffect(x, y, flashData) {
+        const maxBlindTime = 5000; // 5 seconds
+        const blindPercentage = Math.min(1, flashData.remainingTime / maxBlindTime);
+
+        if (blindPercentage <= 0) return;
+
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, this.theme.players.radius, 0, 2 * Math.PI);
+        this.ctx.fillStyle = `rgba(255, 255, 255, ${blindPercentage})`;
+        this.ctx.fill();
     }
 
     _drawKillfeed(canvasRight, canvasTop) {
@@ -564,7 +596,7 @@ async function init() {
     canvas.width  = mapImg.width;
     canvas.height = mapImg.height;
 
-    const roundIndex   = 1;
+    const roundIndex   = 0;
     const frames       = replayData.rounds[roundIndex];
     const events      = replayData.events[roundIndex];
     const tickRate     = replayData.tickRate;
@@ -631,6 +663,7 @@ async function init() {
         const progress = accumulator / tickDuration;
         state.applyFrame(frames[currentFrame], currentFrame, progress);
         state.tickBlooms(delta);
+        state.tickFlashedPlayers(delta); // Update flash durations
         state.killfeed.update(currentTime); // Update killfeed opacity
         while (eventIdx < events.length && events[eventIdx].Tick == currentFrame) {
             state.applyEvent(events[eventIdx], currentTime);
