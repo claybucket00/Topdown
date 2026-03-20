@@ -152,11 +152,9 @@ class GameState {
             case 8: // Player Damage
                 const hurtPlayerId = eventData.playerID;
                 const health = eventData.health;
-                //console.log(hurtPlayerId)
                 this.players[hurtPlayerId].health = health
                 break;
         }
-
     }
 }
 
