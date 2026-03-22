@@ -27,6 +27,7 @@ const (
 	EventInferno
 	EventDamage
 	EventPlayerFlashed
+	EventEquipmentUpdate
 )
 
 type TeamChangeEvent struct {
@@ -75,4 +76,10 @@ type InfernoEvent struct {
 type FlashEvent struct {
 	PlayerID *player.PlayerID `json:"playerID"` // ID of the player who is flashed
 	Duration int64            `json:"duration"` // Blindness duration (milliseconds)
+}
+
+type EquipmentEvent struct {
+	PlayerID  *player.PlayerID `json:"playerID"`
+	Money     int              `json:"money"`
+	Equipment *[]string        `json:"equipment"`
 }

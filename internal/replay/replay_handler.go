@@ -18,30 +18,32 @@ import (
 )
 
 type ReplayHandler struct {
-	parser         demoinfocs.Parser
-	Rounds         []round.Round
-	currentRound   *round.Round
-	Frames         map[int]*framedata.FrameData // Key: Tick, Val: FrameData for that tick
-	Events         []events.GameEvent
-	MapName        string
-	prevTick       int
-	dead           map[int]struct{} // Map to track players who are dead so we can skip collecting their position
-	mapMetdata     metadata.MapMetadata
-	PlayerMetadata map[int]metadata.PlayerMetadata     // Key: playerId, Val: PlayerMetadata
-	NadeMetadata   map[ulid.ULID]metadata.NadeMetadata // TESTING: ULID instead of UniqueID()
+	parser            demoinfocs.Parser
+	Rounds            []round.Round
+	currentRound      *round.Round
+	Frames            map[int]*framedata.FrameData // Key: Tick, Val: FrameData for that tick
+	Events            []events.GameEvent
+	MapName           string
+	prevTick          int
+	dead              map[int]struct{} // Map to track players who are dead so we can skip collecting their position
+	playerToEquipment map[int][]string
+	mapMetdata        metadata.MapMetadata
+	PlayerMetadata    map[int]metadata.PlayerMetadata     // Key: playerId, Val: PlayerMetadata
+	NadeMetadata      map[ulid.ULID]metadata.NadeMetadata // TESTING: ULID instead of UniqueID()
 	// NadeMetadata   map[int64]metadata.NadeMetadata // Key: nadeId, Val: NadeMetadata
 	// EntityIDToNadeID map[int]int64                   // Key: EntityID, Val: NadeID (UniqueID from onGrenadeProjectileDestroyed). Needed because GrenadeEvents do not generate a unique ID
 }
 
 func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 	rh := &ReplayHandler{
-		parser:         parser,
-		Rounds:         []round.Round{},
-		Frames:         make(map[int]*framedata.FrameData),
-		PlayerMetadata: make(map[int]metadata.PlayerMetadata),
-		NadeMetadata:   make(map[ulid.ULID]metadata.NadeMetadata),
-		dead:           make(map[int]struct{}),
-		prevTick:       0,
+		parser:            parser,
+		Rounds:            []round.Round{},
+		Frames:            make(map[int]*framedata.FrameData),
+		playerToEquipment: make(map[int][]string),
+		PlayerMetadata:    make(map[int]metadata.PlayerMetadata),
+		NadeMetadata:      make(map[ulid.ULID]metadata.NadeMetadata),
+		dead:              make(map[int]struct{}),
+		prevTick:          0,
 	}
 
 	parser.RegisterNetMessageHandler(rh.getMapName)
@@ -154,12 +156,33 @@ func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
 	for _, player := range players {
 		// Only track alive players to compress replay size
 		if _, isDead := rh.dead[player.UserID]; !isDead && player.IsAlive() {
+			// Update position
 			radarX, radarY := rh.mapMetdata.WorldToRadarCoords(player.Position().X, player.Position().Y)
 			yaw := player.ViewDirectionX()
 			frame.PlayerPositions[player.UserID] = playerposition.PlayerPosition{
 				X:   radarX,
 				Y:   radarY,
 				Yaw: yaw,
+			}
+			// Update equipment if necessary
+			currentEquipment := player.Weapons()
+			if oldEquipment, ok := rh.playerToEquipment[player.UserID]; !ok || len(currentEquipment) != len(oldEquipment) {
+				currentEquipmentStrings := make([]string, len(currentEquipment))
+				for i, weapon := range currentEquipment {
+					currentEquipmentStrings[i] = weapon.String()
+				}
+				rh.playerToEquipment[player.UserID] = currentEquipmentStrings
+
+				newEquipmentUpdate := events.EquipmentEvent{
+					PlayerID:  utility.Ptr[playerposition.PlayerID](playerposition.PlayerID(player.UserID)),
+					Money:     player.Money(),
+					Equipment: &currentEquipmentStrings,
+				}
+				rh.Events = append(rh.Events, events.GameEvent{
+					Tick: tick,
+					Type: events.EventEquipmentUpdate,
+					Data: newEquipmentUpdate,
+				})
 			}
 		}
 	}
