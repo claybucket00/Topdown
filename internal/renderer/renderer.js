@@ -40,7 +40,13 @@ class GameState {
         this.infernos = {};
         this.killfeed = new Killfeed();
         this.flashedPlayers = {}; // { playerId -> { remainingTime } }
-        this.playerToEquipment = {}; // { playerId -> { equipment } }
+        this.playerToEquipment = {}; // { playerId -> { equipment, money } }
+        for (const playerId in roundMetadata.playerToEquipment) {
+            this.playerToEquipment[playerId] = {
+                equipment: roundMetadata.playerToEquipment[playerId].equipment,
+                money: roundMetadata.playerToEquipment[playerId].money,
+            }
+        }
     }
 
     // Pre-build a map of nadeId -> [{frameIndex, x, y}, ...] across all frames.
@@ -173,7 +179,8 @@ class GameState {
             case 10: // Equipment Update
                 const playerToUpdate = eventData.playerID;
                 const newEquipment = eventData.equipment;
-                this.playerToEquipment[playerToUpdate] = newEquipment;
+                const newMoney = eventData.money;
+                this.playerToEquipment[playerToUpdate] = { equipment: newEquipment, money: newMoney };
                 break;
         }
     }
@@ -515,13 +522,13 @@ class PlayerCardManager {
             const team = this.playerTeams[playerId];
             const container = team === 3 ? this.ctContainer : this.tContainer;
 
-            const card = this._createPlayerCard(playerId, metadata.Name, this.playerEquipments[playerId]);
+            const card = this._createPlayerCard(playerId, metadata.Name, this.playerEquipments[playerId].equipment, this.playerEquipments[playerId].money);
             this.cardCache[playerId] = card;
             container.appendChild(card);
         }
     }
 
-    _createPlayerCard(playerId, playerName, playerEquipment) {
+    _createPlayerCard(playerId, playerName, playerEquipment, playerMoney) {
         const card = document.createElement('div');
         card.className = 'player-stats';
         card.id = `player-card-${playerId}`;
@@ -531,6 +538,7 @@ class PlayerCardManager {
             <div class="player-equipment">
                 ${playerEquipment}
             </div>
+            <div class="player-money">$${playerMoney}</div>
         `;
         return card;
     }
@@ -551,7 +559,7 @@ class PlayerCardManager {
         card.querySelector('.player-health').textContent = player.health
     }
 
-    updatePlayerEquipment(playerId, playerEquipment) {
+    updatePlayerEquipment(playerId, playerEquipment, playerMoney) {
         const card = this.cardCache[playerId]
         if (!card || !playerEquipment) return;
 
@@ -560,6 +568,8 @@ class PlayerCardManager {
 
         card.querySelector('.player-equipment').textContent = playerEquipment
         this.playerEquipments[playerId] = playerEquipment
+
+        card.querySelector('.player-money').textContent = '$' + playerMoney
     }
 
     updatePlayerCard(playerId, updates) {
@@ -691,7 +701,7 @@ async function init() {
         // Update player card status based on alive state
         for (const [playerId, player] of Object.entries(state.players)) {
             cardManager.updatePlayerStatus(playerId, player);
-            cardManager.updatePlayerEquipment(playerId, state.playerToEquipment[playerId])
+            cardManager.updatePlayerEquipment(playerId, state.playerToEquipment[playerId].equipment, state.playerToEquipment[playerId].money)
         }
 
         renderer.render(state, currentTime);

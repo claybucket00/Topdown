@@ -26,7 +26,7 @@ type ReplayHandler struct {
 	MapName           string
 	prevTick          int
 	dead              map[int]struct{} // Map to track players who are dead so we can skip collecting their position
-	playerToEquipment map[int][]string
+	playerToEquipment map[int][]string // Store current player equipment so we only update on changes
 	mapMetdata        metadata.MapMetadata
 	PlayerMetadata    map[int]metadata.PlayerMetadata     // Key: playerId, Val: PlayerMetadata
 	NadeMetadata      map[ulid.ULID]metadata.NadeMetadata // TESTING: ULID instead of UniqueID()
@@ -92,8 +92,20 @@ func (rh *ReplayHandler) onRoundStart(roundStart event.RoundStart) {
 	}
 	players := rh.parser.GameState().Participants().Playing()
 	rh.currentRound.PlayerTeams = make(map[int]common.Team)
+	// rh.currentRound.PlayerToEquipment = make(map[int][]string)
+	rh.currentRound.PlayerToEquipment = make(map[int]round.PlayerEquipment)
 	for _, player := range players {
 		rh.currentRound.PlayerTeams[player.UserID] = player.Team
+		currentEquipment := player.Weapons()
+		currentEquipmentStrings := make([]string, len(currentEquipment))
+		for i, weapon := range currentEquipment {
+			currentEquipmentStrings[i] = weapon.String()
+		}
+		rh.playerToEquipment[player.UserID] = currentEquipmentStrings
+		rh.currentRound.PlayerToEquipment[player.UserID] = round.PlayerEquipment{
+			Equipment: currentEquipmentStrings,
+			Money:     player.Money(),
+		}
 	}
 
 }
@@ -166,7 +178,7 @@ func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
 			}
 			// Update equipment if necessary
 			currentEquipment := player.Weapons()
-			if oldEquipment, ok := rh.playerToEquipment[player.UserID]; !ok || len(currentEquipment) != len(oldEquipment) {
+			if oldEquipment, ok := rh.playerToEquipment[player.UserID]; ok && len(currentEquipment) != len(oldEquipment) {
 				currentEquipmentStrings := make([]string, len(currentEquipment))
 				for i, weapon := range currentEquipment {
 					currentEquipmentStrings[i] = weapon.String()

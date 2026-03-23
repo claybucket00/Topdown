@@ -37,8 +37,9 @@ func (rh *ReplayHandler) GenerateReplay() Replay {
 		// 	i, round.StartTick, round.EndTick)
 
 		replay.RoundMetadata[i] = metadata.RoundMetadata{
-			Score:         round.Score,
-			PlayerToTeams: round.PlayerTeams, // TODO: Could convert to slices instead of maps, however players are not guaranteed to be 0-9 due to bots and spectators
+			Score:             round.Score,
+			PlayerToTeams:     round.PlayerTeams, // TODO: Could convert to slices instead of maps, however players are not guaranteed to be 0-9 due to bots and spectators
+			PlayerToEquipment: round.PlayerToEquipment,
 		}
 		roundFrames := make([]frames.FrameData, 0)
 		for tick := round.StartTick; tick <= round.EndTick; tick++ {
