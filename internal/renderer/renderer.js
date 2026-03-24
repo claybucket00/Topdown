@@ -182,6 +182,18 @@ class GameState {
                 const newMoney = eventData.money;
                 this.playerToEquipment[playerToUpdate] = { equipment: newEquipment, money: newMoney };
                 break;
+            case 11: // Item Pickup
+                console.log(eventData.equipmentID + "was picked up");
+                break;
+            case 12: // Item Drop
+                console.log(eventData.equipmentName + "with ID " + eventData.equipmentID + " was dropped at position (" + eventData.position.x + ", " + eventData.position.y + ")");
+                break;
+            case 13: // Bomb Drop
+                console.log("Bomb was dropped at position (" + eventData.position.X + ", " + eventData.position.Y + ")");
+                break;
+            case 14: // Bomb Pickup
+                console.log("Bomb was picked up");
+                break;
         }
     }
 }
@@ -522,6 +534,9 @@ class PlayerCardManager {
             const team = this.playerTeams[playerId];
             const container = team === 3 ? this.ctContainer : this.tContainer;
 
+            if (!this.playerEquipments[playerId].equipment.length) {
+                continue; // Scuffed way to skip spectators. Not sure there is a better way, as sometimes spectators are assigned to a team (not spectate team).
+            }
             const card = this._createPlayerCard(playerId, metadata.Name, this.playerEquipments[playerId].equipment, this.playerEquipments[playerId].money);
             this.cardCache[playerId] = card;
             container.appendChild(card);

@@ -25,13 +25,13 @@ type ReplayHandler struct {
 	Events            []events.GameEvent
 	MapName           string
 	prevTick          int
+	bombDropped       bool
 	dead              map[int]struct{} // Map to track players who are dead so we can skip collecting their position
 	playerToEquipment map[int][]string // Store current player equipment so we only update on changes
 	mapMetdata        metadata.MapMetadata
 	PlayerMetadata    map[int]metadata.PlayerMetadata     // Key: playerId, Val: PlayerMetadata
 	NadeMetadata      map[ulid.ULID]metadata.NadeMetadata // TESTING: ULID instead of UniqueID()
-	// NadeMetadata   map[int64]metadata.NadeMetadata // Key: nadeId, Val: NadeMetadata
-	// EntityIDToNadeID map[int]int64                   // Key: EntityID, Val: NadeID (UniqueID from onGrenadeProjectileDestroyed). Needed because GrenadeEvents do not generate a unique ID
+	droppedEntities   map[ulid.ULID]struct{}              // Track dropped entities to prevent tracking bought items
 }
 
 func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
@@ -59,6 +59,10 @@ func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 	parser.RegisterEventHandler(rh.onPlayerTeamChange)
 	parser.RegisterEventHandler(rh.onPlayerDamage)
 	parser.RegisterEventHandler(rh.onPlayerFlashed)
+	parser.RegisterEventHandler(rh.onItemDrop)
+	parser.RegisterEventHandler(rh.onItemPickup)
+	parser.RegisterEventHandler(rh.onBombDropped)
+	parser.RegisterEventHandler(rh.onBombPickup)
 
 	return rh
 }
@@ -252,6 +256,60 @@ func (rh *ReplayHandler) onGrenadeProjectileDestroyed(grenadeDestroyed event.Gre
 			X: radarX,
 			Y: radarY,
 		}
+	}
+}
+
+func (rh *ReplayHandler) onItemDrop(itemDrop event.ItemDrop) {
+	rh.droppedEntities[itemDrop.Weapon.UniqueID2()] = struct{}{}
+	entityR3 := itemDrop.Weapon.Entity.Position()
+	radarX, radarY := rh.mapMetdata.WorldToRadarCoords(entityR3.X, entityR3.Y)
+	dropEvent := events.DropEvent{
+		EquipmentID:   itemDrop.Weapon.UniqueID2(),
+		EquipmentName: itemDrop.Weapon.String(),
+		Position:      r2.Point{X: radarX, Y: radarY},
+	}
+	rh.Events = append(rh.Events, events.GameEvent{
+		Tick: rh.parser.GameState().IngameTick(),
+		Type: events.EventDrop,
+		Data: dropEvent,
+	})
+}
+
+func (rh *ReplayHandler) onBombDropped(_ event.BombDropped) {
+	rh.bombDropped = true
+	bombState := rh.parser.GameState().Bomb()
+	rh.Events = append(rh.Events, events.GameEvent{
+		Tick: rh.parser.GameState().IngameTick(),
+		Type: events.EventBombDropped,
+		Data: events.BombDroppedEvent{
+			Position: r2.Point{X: bombState.Position().X, Y: bombState.Position().Y},
+		},
+	})
+}
+
+func (rh *ReplayHandler) onBombPickup(_ event.BombPickup) {
+	if !rh.bombDropped {
+		return // Avoid tracking if bomb is dropped to another player. That interaction is already captured by equipment updates.
+	}
+	rh.bombDropped = false
+	rh.Events = append(rh.Events, events.GameEvent{
+		Tick: rh.parser.GameState().IngameTick(),
+		Type: events.EventBombPickup,
+		Data: struct{}{}, // No additional data needed for bomb pickup event
+	})
+}
+
+// Testing; according to demoinfocs docs this event is not available in all demos.
+func (rh *ReplayHandler) onItemPickup(itemPickup event.ItemPickup) {
+	// Only track pickups not buys
+	if _, ok := rh.droppedEntities[itemPickup.Weapon.UniqueID2()]; ok {
+		rh.Events = append(rh.Events, events.GameEvent{
+			Tick: rh.parser.GameState().IngameTick(),
+			Type: events.EventPickup,
+			Data: events.PickupEvent{
+				EquipmentID: itemPickup.Weapon.UniqueID2(),
+			},
+		})
 	}
 }
 

@@ -28,6 +28,10 @@ const (
 	EventDamage
 	EventPlayerFlashed
 	EventEquipmentUpdate
+	EventPickup
+	EventDrop
+	EventBombDropped
+	EventBombPickup
 )
 
 type TeamChangeEvent struct {
@@ -82,4 +86,18 @@ type EquipmentEvent struct {
 	PlayerID  *player.PlayerID `json:"playerID"`
 	Money     int              `json:"money"`
 	Equipment *[]string        `json:"equipment"`
+}
+
+type PickupEvent struct {
+	EquipmentID ulid.ULID `json:"equipmentID"`
+}
+
+type DropEvent struct {
+	EquipmentID   ulid.ULID `json:"equipmentID"`
+	EquipmentName string    `json:"equipmentName"`
+	Position      r2.Point  `json:"position"`
+}
+
+type BombDroppedEvent struct {
+	Position r2.Point `json:"position"`
 }
