@@ -25,16 +25,6 @@ class GameState {
         this.nadeTrajectories = this._buildNadeTrajectories(frames);
 
         this.players = {}; // { playerId -> { id, name, team, x, y, alive, health, armor} }
-        // for (const playerId in this.playerMeta) {
-        //     this.players[playerId] = {
-        //         playerId,
-        //         name: this.playerMeta[playerId]?.Name,
-        //         team: this.playerTeams[playerId],
-        //         x: 0.0,
-        //         y: 0.0,
-        //         alive: true,
-        //     }
-        // }
         this.nades   = {}; // { nadeId  -> { id, x, y, type } }
         this.blooms = {}; // { nadeId -> { x, y, type, timeRemaining } }
         this.infernos = {};
@@ -554,6 +544,7 @@ class PlayerCardManager {
                 ${playerEquipment}
             </div>
             <div class="player-money">$${playerMoney}</div>
+            <div class="player-flash-overlay"></div>
         `;
         return card;
     }
@@ -585,6 +576,22 @@ class PlayerCardManager {
         this.playerEquipments[playerId] = playerEquipment
 
         card.querySelector('.player-money').textContent = '$' + playerMoney
+    }
+
+    updatePlayerFlash(playerId, flashData) {
+        const card = this.cardCache[playerId];
+        if (!card) return;
+
+        const overlay = card.querySelector('.player-flash-overlay');
+        if (!overlay) return;
+
+        if (!flashData || flashData.remainingTime <= 0) {
+            overlay.style.width = '0%';
+            return;
+        }
+        const maxBlindTime = 5000; // 5 seconds
+        const flashPercentage = (flashData.remainingTime / maxBlindTime) * 100;
+        overlay.style.width = flashPercentage + '%';
     }
 
     updatePlayerCard(playerId, updates) {
@@ -716,7 +723,8 @@ async function init() {
         // Update player card status based on alive state
         for (const [playerId, player] of Object.entries(state.players)) {
             cardManager.updatePlayerStatus(playerId, player);
-            cardManager.updatePlayerEquipment(playerId, state.playerToEquipment[playerId].equipment, state.playerToEquipment[playerId].money)
+            cardManager.updatePlayerEquipment(playerId, state.playerToEquipment[playerId].equipment, state.playerToEquipment[playerId].money);
+            cardManager.updatePlayerFlash(playerId, state.flashedPlayers[playerId]);
         }
 
         renderer.render(state, currentTime);
