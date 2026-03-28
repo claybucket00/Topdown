@@ -633,6 +633,25 @@ function mssToMilliseconds(timeString) {
     return totalMilliseconds;
 }
 
+function findFirstEvent(events, tick) {
+    let left = 0;
+    let right = events.length - 1;
+    let resultIdx = -1;
+
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        if (events[mid].Tick === tick) {
+            resultIdx = mid;
+            right = mid - 1;
+        } else if (events[mid].Tick < tick) {
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+    return resultIdx;
+}
+
 // ============================================================
 // INIT + ANIMATION LOOP
 // ============================================================
@@ -693,11 +712,19 @@ async function init() {
         });
     });
 
+    // Setup time scrubbing slider
+    const timeSlider = document.getElementById('replay-progress');
+    timeSlider.addEventListener('change', () => {
+        const percentage = timeSlider.value / timeSlider.max;
+        currentFrame = Math.floor(percentage * frames.length);
+        accumulator = 0; // Reset accumulator to align with new frame
+        lastTime = performance.now(); // Reset timing to prevent large deltas
+        elapsedTime = currentFrame * tickDuration; // Sync elapsed time with scrubbed frame
+        eventIdx = findFirstEvent(events, currentFrame); // Sync event index with scrubbed frame
+    });
+
     // Setup time scrubbing bar
     const totalTimeDisplay = document.getElementById('total-time');
-    // const totalMinutes = Math.floor(totalTime);
-    // const totalSeconds = Math.floor((totalTime - totalMinutes) * 60);
-    // const displayTotalTime = `${String(totalMinutes)}:${String(totalSeconds).padStart(2, '0')}`;
     totalTimeDisplay.textContent = formatMillisecondsToMSS(totalTime);
 
     const currentTimeDisplay = document.getElementById('current-time');
@@ -717,6 +744,10 @@ async function init() {
 
         // Update time display using the dedicated elapsed time tracker
         currentTimeDisplay.textContent = formatMillisecondsToMSS(elapsedTime);
+
+        // Update time slider position based on elapsed time
+        const progressPercentage = Math.min(1, elapsedTime / totalTime);
+        timeSlider.value = progressPercentage * timeSlider.max;
 
         const currentTime = now - startTime; // Time since animation started
 
