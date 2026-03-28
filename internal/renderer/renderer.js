@@ -636,20 +636,16 @@ function mssToMilliseconds(timeString) {
 function findFirstEvent(events, tick) {
     let left = 0;
     let right = events.length - 1;
-    let resultIdx = -1;
 
     while (left <= right) {
         const mid = Math.floor((left + right) / 2);
-        if (events[mid].Tick === tick) {
-            resultIdx = mid;
-            right = mid - 1;
-        } else if (events[mid].Tick < tick) {
+        if (events[mid].Tick < tick) {
             left = mid + 1;
         } else {
             right = mid - 1;
         }
     }
-    return resultIdx;
+    return left;
 }
 
 // ============================================================
@@ -717,10 +713,12 @@ async function init() {
     timeSlider.addEventListener('change', () => {
         const percentage = timeSlider.value / timeSlider.max;
         currentFrame = Math.floor(percentage * frames.length);
+        console.log(`Scrubbed to frame: ${currentFrame}`)
         accumulator = 0; // Reset accumulator to align with new frame
         lastTime = performance.now(); // Reset timing to prevent large deltas
         elapsedTime = currentFrame * tickDuration; // Sync elapsed time with scrubbed frame
         eventIdx = findFirstEvent(events, currentFrame); // Sync event index with scrubbed frame
+        console.log(`Scrubbed to event index: ${eventIdx}`)
     });
 
     // Setup time scrubbing bar
@@ -740,14 +738,15 @@ async function init() {
             effectiveDelta = delta * playbackSpeed; // Apply playback speed multiplier
             accumulator += effectiveDelta;
             elapsedTime += effectiveDelta; // Track total elapsed time
+            const progressPercentage = Math.min(1, elapsedTime / totalTime);
+            timeSlider.value = progressPercentage * timeSlider.max;
         }
 
         // Update time display using the dedicated elapsed time tracker
         currentTimeDisplay.textContent = formatMillisecondsToMSS(elapsedTime);
 
         // Update time slider position based on elapsed time
-        const progressPercentage = Math.min(1, elapsedTime / totalTime);
-        timeSlider.value = progressPercentage * timeSlider.max;
+        
 
         const currentTime = now - startTime; // Time since animation started
 
