@@ -724,18 +724,25 @@ async function init() {
             accumulator -= tickDuration;
             currentFrame++;
             if (currentFrame >= frames.length) return;
+
+            // Apply frame for this tick
+            state.applyFrame(frames[currentFrame], currentFrame, 0);
+
+            // Process all events for this frame
+            while (eventIdx < events.length && events[eventIdx].Tick == currentFrame) {
+                state.applyEvent(events[eventIdx], currentTime);
+                eventIdx++;
+            }
         }
 
         // progress is the sub-tick fraction (0–1) used for nade interpolation
         const progress = accumulator / tickDuration;
         state.applyFrame(frames[currentFrame], currentFrame, progress);
+
+        // Use effectiveDelta so timers only tick when not paused and respect playback speed
         state.tickBlooms(effectiveDelta);
         state.tickFlashedPlayers(effectiveDelta); // Update flash durations
         state.killfeed.update(currentTime); // Update killfeed opacity
-        while (eventIdx < events.length && events[eventIdx].Tick == currentFrame) {
-            state.applyEvent(events[eventIdx], currentTime);
-            eventIdx++;
-        }
 
         // Update player card status based on alive state
         for (const [playerId, player] of Object.entries(state.players)) {

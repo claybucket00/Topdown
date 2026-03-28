@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os"
 	"topdown/internal/replay"
@@ -9,13 +10,19 @@ import (
 )
 
 // https://www.hltv.org/matches/2382614/spirit-vs-mouz-blasttv-austin-major-2025
-var DEMO_PATH = "./demos/spirit-vs-mouz-m1-mirage.dem"
+// var DEMO_PATH = "./demos/spirit-vs-mouz-m1-mirage.dem"
 
 // var DEMO_PATH = "./demos/furia-vs-vitality-m1-mirage.dem"
 // var DEMO_PATH = "./demos/g2-vs-fut-m1-mirage.dem"
 
 func main() {
-	f, err := os.Open(DEMO_PATH)
+	demoPath := flag.String("demo", "", "Path to the demo file")
+	flag.Parse()
+
+	if *demoPath == "" {
+		log.Panic("Demo path is required. Use -demo flag to specify the path.")
+	}
+	f, err := os.Open(*demoPath)
 	if err != nil {
 		log.Panicf("Failed to open demo: %v", err)
 	}
