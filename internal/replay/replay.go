@@ -6,7 +6,12 @@ import (
 	events "topdown/internal/events"
 	frames "topdown/internal/frames"
 	metadata "topdown/internal/metadata"
+	player "topdown/internal/playerposition"
+	playerposition "topdown/internal/playerposition"
+	utility "topdown/internal/utility"
 
+	r2 "github.com/golang/geo/r2"
+	common "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	ulid "github.com/oklog/ulid/v2"
 )
 
@@ -18,60 +23,145 @@ import (
 // Players Equipment: playerId, equipment
 // TODO: Maybe need to store killfeed state as well, if we want perfect scrubbing.
 
-type playerSnapshot struct {
-	PlayerID int
-	Health   int
-	Armor    int
-	Team     int
+type PlayerSnapshot struct {
+	Health    int
+	Armor     int
+	Team      common.Team
+	Money     int
+	Equipment []string
 }
 
-type bloomSnapshot struct {
-	NadeID        ulid.ULID
-	X             float64
-	Y             float64
-	Type          string
-	TimeRemaining int
+type BloomSnapshot struct {
+	X        float64
+	Y        float64
+	Type     string
+	Duration float64
 }
 
-type infernoSnapshot struct {
-	X             float64
-	Y             float64
-	TimeRemaining int
+// type infernoSnapshot struct {
+// 	Points        []r2.Point
+// 	TimeRemaining int
+// }
+
+type FlashedSnapshot struct {
+	TimeRemaining float64 `json:"timeRemaining"`
 }
 
-type flashedSnapshot struct {
-	PlayerID      int
-	TimeRemaining int
-}
-
-type equipmentSnapshot struct {
-	PlayerID  int
+type EquipmentSnapshot struct {
 	Equipment []string
 }
 
 type Snapshot struct {
-	playerSnapshots    []playerSnapshot
-	bloomSnapshots     []bloomSnapshot
-	infernoSnapshots   []infernoSnapshot
-	flashedSnapshots   []flashedSnapshot
-	equipmentSnapshots []equipmentSnapshot
+	PlayerSnapshots  map[player.PlayerID]PlayerSnapshot
+	BloomSnapshots   map[ulid.ULID]BloomSnapshot
+	InfernoSnapshots map[int64][]r2.Point
+	FlashedSnapshots map[player.PlayerID]FlashedSnapshot
+	BombSnapshot     *r2.Point `json:"bombSnapshot,omitempty"`
 }
 
-func (r *Snapshot) updateSnapshot(event events.GameEvent) {
+func (snap *Snapshot) updateSnapshot(event events.GameEvent) {
 	switch event.Type {
 	case events.EventFlash:
-	// Update flashedSnapshots
+		// Update bloomSnapshots
+		if eventData, ok := event.Data.(events.GrenadeEvent); ok {
+			snap.BloomSnapshots[eventData.NadeId] = BloomSnapshot{
+				X:        eventData.X,
+				Y:        eventData.Y,
+				Type:     "Flashbang",
+				Duration: 500.0,
+			}
+		}
 	case events.EventSmokeStart:
 		// Update bloomSnapshots
+		if eventData, ok := event.Data.(events.SmokeEvent); ok {
+			snap.BloomSnapshots[eventData.NadeId] = BloomSnapshot{
+				X:        eventData.X,
+				Y:        eventData.Y,
+				Type:     "Smoke Grenade", // TODO: Refactor smoke grenades into general nade structure.
+				Duration: 18000.0,         // Used to track duration left in front end.
+			}
+		}
 	case events.EventSmokeEnd:
 		// Update bloomSnapshots
+		if eventData, ok := event.Data.(events.SmokeEvent); ok {
+			bloomToRemove := eventData.NadeId
+			delete(snap.BloomSnapshots, bloomToRemove)
+		}
+	case events.EventHe:
+		if eventData, ok := event.Data.(events.GrenadeEvent); ok {
+			snap.BloomSnapshots[eventData.NadeId] = BloomSnapshot{
+				X:        eventData.X,
+				Y:        eventData.Y,
+				Type:     "HE Grenade",
+				Duration: 500.0,
+			}
+		}
+	case events.EventTeamChange:
+		if eventData, ok := event.Data.(events.TeamChangeEvent); ok {
+			playerSnapshot := snap.PlayerSnapshots[playerposition.PlayerID(eventData.PlayerID)]
+			playerSnapshot.Team = eventData.Team
+			snap.PlayerSnapshots[playerposition.PlayerID(eventData.PlayerID)] = playerSnapshot
+		}
 	case events.EventInferno:
 		// Update infernoSnapshots
+		if eventData, ok := event.Data.(events.InfernoEvent); ok {
+			snap.InfernoSnapshots[eventData.NadeId] = eventData.Points
+		}
+	case events.EventDamage:
+		if eventData, ok := event.Data.(events.DamageEvent); ok {
+			playerSnapshot := snap.PlayerSnapshots[*eventData.PlayerID]
+			playerSnapshot.Health = eventData.Health
+			playerSnapshot.Armor = eventData.Armor
+			snap.PlayerSnapshots[*eventData.PlayerID] = playerSnapshot
+
+		}
 	case events.EventPlayerFlashed:
 		// Update flashedSnapshots
+		if eventData, ok := event.Data.(events.FlashEvent); ok {
+			snap.FlashedSnapshots[*eventData.PlayerID] = FlashedSnapshot{
+				TimeRemaining: float64(eventData.Duration),
+			}
+		}
 	case events.EventEquipmentUpdate:
 		// Update equipmentSnapshots
+		if eventData, ok := event.Data.(events.EquipmentEvent); ok {
+			playerSnapshot := snap.PlayerSnapshots[*eventData.PlayerID]
+			playerSnapshot.Money = eventData.Money
+			playerSnapshot.Equipment = *eventData.Equipment
+			snap.PlayerSnapshots[*eventData.PlayerID] = playerSnapshot
+		}
+	case events.EventBombDropped:
+		if eventData, ok := event.Data.(events.BombDroppedEvent); ok {
+			snap.BombSnapshot = utility.Ptr[r2.Point](eventData.Position)
+		}
+
 	}
+}
+
+func (snap *Snapshot) tickBlooms(timeElapsed float64) {
+	for id, bloom := range snap.BloomSnapshots {
+		bloom.Duration -= timeElapsed
+		if bloom.Duration <= 0 {
+			delete(snap.BloomSnapshots, id)
+		} else {
+			snap.BloomSnapshots[id] = bloom
+		}
+	}
+}
+
+func (snap *Snapshot) tickFlashedPlayers(timeElapsed float64) {
+	for id, flashedSnapshot := range snap.FlashedSnapshots {
+		flashedSnapshot.TimeRemaining -= timeElapsed
+		if flashedSnapshot.TimeRemaining <= 0 {
+			delete(snap.FlashedSnapshots, id)
+		} else {
+			snap.FlashedSnapshots[id] = flashedSnapshot
+		}
+	}
+}
+
+func (snap *Snapshot) resetInfernos() {
+	snap.InfernoSnapshots = make(map[int64][]r2.Point)
 }
 
 type Replay struct {
@@ -82,10 +172,11 @@ type Replay struct {
 	RoundMetadata  []metadata.RoundMetadata            `json:"roundMetadata"`  // Slice of RoundMetadata indexed by round number (0-based)
 	Rounds         [][]frames.FrameData                `json:"rounds"`
 	Events         [][]events.GameEvent                `json:"events"`
-	Snapshots      []Snapshot                          `json:"snapshots"`
+	Snapshots      [][]Snapshot                        `json:"snapshots"`
 }
 
 var SNAPSHOT_INTERVAL = 256
+var BLOOM_DURATION = 500 // Bloom duration in ms for flashes, HEs, decoys
 
 func (rh *ReplayHandler) GenerateReplay() Replay {
 	replay := Replay{
@@ -96,41 +187,69 @@ func (rh *ReplayHandler) GenerateReplay() Replay {
 		Events:         make([][]events.GameEvent, len(rh.Rounds)),
 		RoundMetadata:  make([]metadata.RoundMetadata, len(rh.Rounds)),
 		Rounds:         make([][]frames.FrameData, len(rh.Rounds)),
+		Snapshots:      make([][]Snapshot, len(rh.Rounds)),
 	}
+
+	tickDuration := 1000 / replay.TickRate // ms per tick.
+	timeElasped := 0.0
 
 	eventIndex := 0
 	for i, round := range rh.Rounds {
 		// log.Printf("Processing round %d start=%d end=%d\n",
 		// 	i, round.StartTick, round.EndTick)
 
-		playerSnapshots := []playerSnapshot{}
-		bloomSnapshots := []bloomSnapshot{}
-		infernoSnapshots := []infernoSnapshot{}
-		flashedSnapshots := []flashedSnapshot{}
-		equipmentSnapshots := []equipmentSnapshot{}
-
+		// playerSnapshots := []playerSnapshot{}
+		// bloomSnapshots := []bloomSnapshot{}
+		// infernoSnapshots := make(map[int64]infernoSnapshot)
+		// flashedSnapshots := []flashedSnapshot{}
+		// equipmentSnapshots := []equipmentSnapshot{}
 		replay.RoundMetadata[i] = metadata.RoundMetadata{
 			Score:             round.Score,
 			PlayerToTeams:     round.PlayerTeams, // TODO: Could convert to slices instead of maps, however players are not guaranteed to be 0-9 due to bots and spectators
 			PlayerToEquipment: round.PlayerToEquipment,
 		}
+
+		snapshot := Snapshot{
+			PlayerSnapshots:  make(map[playerposition.PlayerID]PlayerSnapshot),
+			BloomSnapshots:   make(map[ulid.ULID]BloomSnapshot),
+			InfernoSnapshots: make(map[int64][]r2.Point),
+			FlashedSnapshots: make(map[player.PlayerID]FlashedSnapshot),
+			BombSnapshot:     nil,
+		}
+
+		for playerID, playerEquipment := range round.PlayerToEquipment {
+			playerSnapshot := snapshot.PlayerSnapshots[playerposition.PlayerID(playerID)]
+			playerSnapshot.Equipment = playerEquipment.Equipment
+			playerSnapshot.Money = playerEquipment.Money
+			snapshot.PlayerSnapshots[playerposition.PlayerID(playerID)] = playerSnapshot
+		}
+
 		roundEvents := make([]events.GameEvent, 0)
-		if eventIndex < len(rh.Events) && rh.Events[eventIndex].Tick < round.StartTick {
-			eventIndex += (round.StartTick - rh.Events[eventIndex].Tick) // Fast forward to the start tick of the round
+		// if eventIndex < len(rh.Events) && rh.Events[eventIndex].Tick < round.StartTick {
+		// 	eventIndex += (round.StartTick - rh.Events[eventIndex].Tick) // Fast forward to the start tick of the round
+		// }
+		for eventIndex < len(rh.Events) && rh.Events[eventIndex].Tick < round.StartTick {
+			eventIndex++ // Fast forward to the start tick of the round
 		}
 		roundFrames := make([]frames.FrameData, 0)
 		for tick := round.StartTick; tick <= round.EndTick; tick++ {
+			timeElasped += float64(tick-round.StartTick) * tickDuration
 			frameData, exists := rh.Frames[tick]
 			if exists {
 				roundFrames = append(roundFrames, *frameData)
 			}
+			snapshot.resetInfernos() // Reset infernos every tick because we track them per tick. We don't need to accumulate them.
 			for eventIndex < len(rh.Events) && rh.Events[eventIndex].Tick == tick {
 				rh.Events[eventIndex].Tick = rh.Events[eventIndex].Tick - round.StartTick // Convert to 0-based tick for the round
 				roundEvents = append(roundEvents, rh.Events[eventIndex])
+				snapshot.updateSnapshot(rh.Events[eventIndex])
 				eventIndex++
 			}
 			if tick%SNAPSHOT_INTERVAL == 0 {
 				// Append snapshot
+				snapshot.tickBlooms(timeElasped)         // Remove expired blooms
+				snapshot.tickFlashedPlayers(timeElasped) // Remove expired flashed players
+				replay.Snapshots[i] = append(replay.Snapshots[i], snapshot)
 			}
 		}
 

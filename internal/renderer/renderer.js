@@ -144,7 +144,7 @@ class GameState {
                 break;
             case 5: // HE explode
                 const nadeId5 = eventData.NadeId;
-                this.blooms[nadeId5] = { x: eventData.X, y: eventData.Y, type: this.nadeMeta[nadeId5]?.Type, timeRemaining: 500 }; // Smoke bloom with 18s duration
+                this.blooms[nadeId5] = { x: eventData.X, y: eventData.Y, type: this.nadeMeta[nadeId5]?.Type, timeRemaining: 500 }; // HE bloom with 0.5s duration
                 delete this.nadeTrajectories[nadeId5];
                 break;
             case 6: // Team change event
@@ -666,6 +666,7 @@ async function init() {
     let startTime    = performance.now();
     let isPaused     = false;
     let elapsedTime  = 0; // Track elapsed time separately from frame accumulator
+    let playbackSpeed = 1; // Playback speed multiplier (1x, 2x, 4x)
 
     let eventIdx = 0;
 
@@ -677,6 +678,19 @@ async function init() {
         if (!isPaused) {
             lastTime = performance.now(); // Reset time when resuming
         }
+    });
+
+    // Setup speed controls
+    const speedBtns = document.querySelectorAll('.speed-btn');
+    speedBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remove active class from all buttons
+            speedBtns.forEach(b => b.classList.remove('active'));
+            // Add active class to clicked button
+            btn.classList.add('active');
+            // Update playback speed
+            playbackSpeed = parseFloat(btn.dataset.speed);
+        });
     });
 
     // Setup time scrubbing bar
@@ -692,10 +706,13 @@ async function init() {
         const delta = now - lastTime;
         lastTime = now;
 
+        let effectiveDelta = 0; // Delta adjusted by playback speed
+
         // Only update accumulator and time when not paused
         if (!isPaused) {
-            accumulator += delta;
-            elapsedTime += delta; // Track total elapsed time
+            effectiveDelta = delta * playbackSpeed; // Apply playback speed multiplier
+            accumulator += effectiveDelta;
+            elapsedTime += effectiveDelta; // Track total elapsed time
         }
 
         // Update time display using the dedicated elapsed time tracker
@@ -712,8 +729,8 @@ async function init() {
         // progress is the sub-tick fraction (0–1) used for nade interpolation
         const progress = accumulator / tickDuration;
         state.applyFrame(frames[currentFrame], currentFrame, progress);
-        state.tickBlooms(delta);
-        state.tickFlashedPlayers(delta); // Update flash durations
+        state.tickBlooms(effectiveDelta);
+        state.tickFlashedPlayers(effectiveDelta); // Update flash durations
         state.killfeed.update(currentTime); // Update killfeed opacity
         while (eventIdx < events.length && events[eventIdx].Tick == currentFrame) {
             state.applyEvent(events[eventIdx], currentTime);
