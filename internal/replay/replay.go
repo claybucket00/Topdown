@@ -52,6 +52,7 @@ type EquipmentSnapshot struct {
 }
 
 type Snapshot struct {
+	Tick             int
 	PlayerSnapshots  map[player.PlayerID]PlayerSnapshot
 	BloomSnapshots   map[ulid.ULID]BloomSnapshot
 	InfernoSnapshots map[int64][]r2.Point
@@ -247,6 +248,7 @@ func (rh *ReplayHandler) GenerateReplay() Replay {
 			}
 			if tick%SNAPSHOT_INTERVAL == 0 {
 				// Append snapshot
+				snapshot.Tick = tick - round.StartTick   // Convert to 0-based tick for the round
 				snapshot.tickBlooms(timeElasped)         // Remove expired blooms
 				snapshot.tickFlashedPlayers(timeElasped) // Remove expired flashed players
 				replay.Snapshots[i] = append(replay.Snapshots[i], snapshot)

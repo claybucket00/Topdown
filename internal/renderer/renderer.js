@@ -727,7 +727,18 @@ async function init() {
 
     // Setup time scrubbing slider
     const timeSlider = document.getElementById('replay-progress');
-    timeSlider.addEventListener('change', () => {
+    let isScrubbing = false;
+
+    // Handle scrubbing - click or drag
+    timeSlider.addEventListener('pointerdown', () => {
+        isScrubbing = true;
+        isPaused = true; // Pause during scrubbing
+        playPauseBtn.textContent = '▶';
+    });
+
+    timeSlider.addEventListener('pointerup', () => {
+        isScrubbing = false;
+        // Apply the scrubbed position
         const percentage = timeSlider.value / timeSlider.max;
         currentFrame = Math.floor(percentage * frames.length);
         accumulator = 0; // Reset accumulator to align with new frame
@@ -754,14 +765,14 @@ async function init() {
             accumulator += effectiveDelta;
             elapsedTime += effectiveDelta; // Track total elapsed time
             const progressPercentage = Math.min(1, elapsedTime / totalTime);
-            timeSlider.value = progressPercentage * timeSlider.max;
+            // Only update slider if user is not currently scrubbing
+            if (!isScrubbing) {
+                timeSlider.value = progressPercentage * timeSlider.max;
+            }
         }
 
         // Update time display using the dedicated elapsed time tracker
         currentTimeDisplay.textContent = formatMillisecondsToMSS(elapsedTime);
-
-        // Update time slider position based on elapsed time
-        
 
         const currentTime = now - startTime; // Time since animation started
 
