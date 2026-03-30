@@ -648,6 +648,22 @@ function findFirstEvent(events, tick) {
     return left;
 }
 
+function findFirstSnapshot(snapshots, tick) {
+    let left = 0;
+    let right = snapshots.length - 1;
+    let resultIdx = -1;
+
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        if (snapshots[mid].tick <= tick) {
+            resultIdx = mid;
+            left = mid + 1;
+        } else {
+            right = mid - 1;
+        }
+    }
+}
+
 // ============================================================
 // INIT + ANIMATION LOOP
 // ============================================================
@@ -664,6 +680,7 @@ async function init() {
     const roundIndex   = 1;
     const frames       = replayData.rounds[roundIndex];
     const events      = replayData.events[roundIndex];
+    const snapshots = replayData.snapshots[roundIndex];
     const tickRate     = replayData.tickRate;
     const tickDuration = 1000 / tickRate; // ms per tick (~15.6ms at 64 tick)
     const totalTime = frames.length / tickRate * 1000
@@ -713,12 +730,10 @@ async function init() {
     timeSlider.addEventListener('change', () => {
         const percentage = timeSlider.value / timeSlider.max;
         currentFrame = Math.floor(percentage * frames.length);
-        console.log(`Scrubbed to frame: ${currentFrame}`)
         accumulator = 0; // Reset accumulator to align with new frame
         lastTime = performance.now(); // Reset timing to prevent large deltas
         elapsedTime = currentFrame * tickDuration; // Sync elapsed time with scrubbed frame
         eventIdx = findFirstEvent(events, currentFrame); // Sync event index with scrubbed frame
-        console.log(`Scrubbed to event index: ${eventIdx}`)
     });
 
     // Setup time scrubbing bar
