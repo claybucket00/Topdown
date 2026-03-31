@@ -5,8 +5,10 @@ go 1.25.0
 require (
 	github.com/andygrunwald/vdf v1.1.0
 	github.com/golang/geo v0.0.0-20260129164528-943061e2742c
+	github.com/golang/protobuf v1.5.0
 	github.com/markus-wa/demoinfocs-golang/v5 v5.1.2
 	github.com/oklog/ulid/v2 v2.1.1
+	google.golang.org/protobuf v1.36.11
 )
 
 require (
@@ -17,5 +19,4 @@ require (
 	github.com/markus-wa/quickhull-go/v2 v2.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
 )

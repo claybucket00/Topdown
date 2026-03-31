@@ -29,7 +29,7 @@ class GameState {
         this.blooms = {}; // { nadeId -> { x, y, type, timeRemaining } }
         this.infernos = {};
         this.killfeed = new Killfeed();
-        this.flashedPlayers = {}; // { playerId -> { remainingTime } }
+        this.flashedPlayers = {}; // { playerId -> { remainingTimeMs } }
         this.playerToEquipment = {}; // { playerId -> { equipment, money } }
         for (const playerId in roundMetadata.playerToEquipment) {
             this.playerToEquipment[playerId] = {
@@ -105,7 +105,7 @@ class GameState {
 
         this.flashedPlayers = {};
         for (const [playerId, flashSnapshot] of Object.entries(snapshot.FlashedSnapshots)) {
-            this.flashedPlayers[playerId] = { remainingTime: flashSnapshot.TimeRemaining };
+            this.flashedPlayers[playerId] = { remainingTimeMs: flashSnapshot.remainingTime };
         }
 
         // TODO: track bomb state.
@@ -153,8 +153,8 @@ class GameState {
 
     tickFlashedPlayers(delta) {
         for (const [playerId, flash] of Object.entries(this.flashedPlayers)) {
-            flash.remainingTime -= delta;
-            if (flash.remainingTime <= 0) {
+            flash.remainingTimeMs -= delta;
+            if (flash.remainingTimeMs <= 0) {
                 delete this.flashedPlayers[playerId];
             }
         }
@@ -215,7 +215,7 @@ class GameState {
             case 9: // Player Flashed
                 const flashedPlayerId = eventData.playerID;
                 const duration = eventData.duration;
-                this.flashedPlayers[flashedPlayerId] = { remainingTime: duration };
+                this.flashedPlayers[flashedPlayerId] = { remainingTimeMs: duration };
                 break;
             case 10: // Equipment Update
                 const playerToUpdate = eventData.playerID;
@@ -480,7 +480,7 @@ class Renderer {
 
     _drawFlashedEffect(x, y, flashData) {
         const maxBlindTime = 5000; // 5 seconds
-        const blindPercentage = Math.min(1, flashData.remainingTime / maxBlindTime);
+        const blindPercentage = Math.min(1, flashData.remainingTimeMs / maxBlindTime);
 
         if (blindPercentage <= 0) return;
 
@@ -636,12 +636,12 @@ class PlayerCardManager {
         const overlay = card.querySelector('.player-flash-overlay');
         if (!overlay) return;
 
-        if (!flashData || flashData.remainingTime <= 0) {
+        if (!flashData || flashData.remainingTimeMs <= 0) {
             overlay.style.width = '0%';
             return;
         }
         const maxBlindTime = 5000; // 5 seconds
-        const flashPercentage = (flashData.remainingTime / maxBlindTime) * 100;
+        const flashPercentage = (flashData.remainingTimeMs / maxBlindTime) * 100;
         overlay.style.width = flashPercentage + '%';
     }
 

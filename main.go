@@ -41,8 +41,10 @@ func main() {
 	// rh.PrintEventLengths()
 	replay := rh.GenerateReplay()
 	// replay.PrintNadeData()
-	err = replay.SerializeReplay("./internal/renderer/output.json")
+	err = replay.SerializeReplayJSON("./internal/renderer/output.json")
 	if err != nil {
 		log.Panicf("Failed to serialize replay: %v", err)
 	}
+
+	err = replay.SerializeReplayProtobuf("./test.binpb")
 }

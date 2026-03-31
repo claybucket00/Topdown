@@ -8,11 +8,14 @@ import (
 	metadata "topdown/internal/metadata"
 	player "topdown/internal/playerposition"
 	playerposition "topdown/internal/playerposition"
+	serialization "topdown/internal/serialization"
 	utility "topdown/internal/utility"
 
 	r2 "github.com/golang/geo/r2"
 	common "github.com/markus-wa/demoinfocs-golang/v5/pkg/demoinfocs/common"
 	ulid "github.com/oklog/ulid/v2"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Need to create snapshots for replay scrubbing. Need to store:
@@ -47,7 +50,7 @@ type BloomSnapshot struct {
 // }
 
 type FlashedSnapshot struct {
-	TimeRemaining float64 `json:"timeRemaining"`
+	RemainingTime float64 `json:"remainingTime"`
 }
 
 type Snapshot struct {
@@ -119,7 +122,7 @@ func (snap *Snapshot) updateSnapshot(event events.GameEvent) {
 		// Update flashedSnapshots
 		if eventData, ok := event.Data.(events.FlashEvent); ok {
 			snap.FlashedSnapshots[*eventData.PlayerID] = FlashedSnapshot{
-				TimeRemaining: float64(eventData.Duration),
+				RemainingTime: float64(eventData.Duration),
 			}
 		}
 	case events.EventEquipmentUpdate:
@@ -151,8 +154,8 @@ func (snap *Snapshot) tickBlooms(timeElapsed float64) {
 
 func (snap *Snapshot) tickFlashedPlayers(timeElapsed float64) {
 	for id, flashedSnapshot := range snap.FlashedSnapshots {
-		flashedSnapshot.TimeRemaining -= timeElapsed
-		if flashedSnapshot.TimeRemaining <= 0 {
+		flashedSnapshot.RemainingTime -= timeElapsed
+		if flashedSnapshot.RemainingTime <= 0 {
 			delete(snap.FlashedSnapshots, id)
 		} else {
 			snap.FlashedSnapshots[id] = flashedSnapshot
@@ -300,7 +303,7 @@ func (rh *ReplayHandler) GenerateReplay() Replay {
 	return replay
 }
 
-func (r *Replay) SerializeReplay(path string) error {
+func (r *Replay) SerializeReplayJSON(path string) error {
 	file, _ := os.Create(path)
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
@@ -311,6 +314,360 @@ func (r *Replay) SerializeReplay(path string) error {
 	}
 
 	return nil
+}
+
+func (r *Replay) SerializeReplayProtobuf(path string) error {
+	// Create proto Replay message
+	protoReplay := &serialization.Replay{
+		MapName:     r.MapName,
+		TickRate:    r.TickRate,
+		LastUpdated: timestamppb.Now(),
+	}
+
+	// Convert PlayerMetadata map
+	protoReplay.PlayersMetadata = make(map[int32]*serialization.PlayerMetadata)
+	for playerID, playerMeta := range r.PlayerMetadata {
+		protoReplay.PlayersMetadata[int32(playerID)] = &serialization.PlayerMetadata{
+			Name: playerMeta.Name,
+		}
+	}
+
+	// Convert NadeMetadata map (ULID to string)
+	protoReplay.NadesMetadata = make(map[string]*serialization.NadeMetadata)
+	for nadeID, nadeMeta := range r.NadeMetadata {
+		protoReplay.NadesMetadata[nadeID.String()] = &serialization.NadeMetadata{
+			Type:    nadeMeta.Type,
+			Thrower: int32(nadeMeta.Thrower),
+		}
+	}
+
+	// Convert RoundMetadata slice
+	protoReplay.RoundsMetadata = make([]*serialization.RoundMetadata, len(r.RoundMetadata))
+	for i, roundMeta := range r.RoundMetadata {
+		score := &serialization.Score{
+			Ct: int32(roundMeta.Score.CT),
+			T:  int32(roundMeta.Score.T),
+		}
+
+		playerToTeam := make(map[int32]int32)
+		for playID, team := range roundMeta.PlayerToTeams {
+			playerToTeam[int32(playID)] = int32(team)
+		}
+
+		playerToEquipment := make(map[int32]*serialization.PlayerEquipment)
+		for playID, equip := range roundMeta.PlayerToEquipment {
+			playerToEquipment[int32(playID)] = &serialization.PlayerEquipment{
+				Equipment: equip.Equipment,
+				Money:     int32(equip.Money),
+				Armor:     int32(equip.Armor),
+			}
+		}
+
+		protoReplay.RoundsMetadata[i] = &serialization.RoundMetadata{
+			Score:             score,
+			PlayerToTeam:      playerToTeam,
+			PlayerToEquipment: playerToEquipment,
+		}
+	}
+
+	// Convert Rounds (2D slice of FrameData to RoundFrames)
+	protoReplay.Rounds = make([]*serialization.RoundFrames, len(r.Rounds))
+	for roundIdx, round := range r.Rounds {
+		roundFrames := &serialization.RoundFrames{
+			Frames: make([]*serialization.FrameData, len(round)),
+		}
+		for frameIdx, frameData := range round {
+			protoFrameData := &serialization.FrameData{
+				PlayerPositions: make(map[int32]*serialization.PlayerPosition),
+				NadePositions:   make(map[string]*serialization.NadePosition),
+			}
+
+			// Convert player positions
+			for playerID, playerPos := range frameData.PlayerPositions {
+				protoFrameData.PlayerPositions[int32(playerID)] = &serialization.PlayerPosition{
+					X:   playerPos.X,
+					Y:   playerPos.Y,
+					Yaw: playerPos.Yaw,
+				}
+			}
+
+			// Convert nade positions (ULID to string)
+			for nadeID, nadePos := range frameData.NadePositions {
+				protoFrameData.NadePositions[nadeID.String()] = &serialization.NadePosition{
+					X: nadePos.X,
+					Y: nadePos.Y,
+				}
+			}
+
+			roundFrames.Frames[frameIdx] = protoFrameData
+		}
+		protoReplay.Rounds[roundIdx] = roundFrames
+	}
+
+	// Convert Events (2D slice of GameEvent to RoundEvents)
+	protoReplay.Events = make([]*serialization.RoundEvents, len(r.Events))
+	for roundIdx, round := range r.Events {
+		roundEvents := &serialization.RoundEvents{
+			Events: make([]*serialization.GameEvent, len(round)),
+		}
+		for eventIdx, event := range round {
+			protoEvent := &serialization.GameEvent{
+				Tick: int32(event.Tick),
+				Type: eventTypeToProto(event.Type),
+			}
+
+			// Convert the event data based on type
+			switch eventData := event.Data.(type) {
+			case events.TeamChangeEvent:
+				protoEvent.Data = &serialization.GameEvent_TeamChangeEvent{
+					TeamChangeEvent: &serialization.TeamChangeEvent{
+						PlayerID: int32(eventData.PlayerID),
+						Team:     int32(eventData.Team),
+					},
+				}
+			case events.SmokeEvent:
+				protoEvent.Data = &serialization.GameEvent_SmokeEvent{
+					SmokeEvent: &serialization.SmokeEvent{
+						X:      eventData.X,
+						Y:      eventData.Y,
+						NadeId: eventData.NadeId.String(),
+					},
+				}
+			case events.GrenadeEvent:
+				protoEvent.Data = &serialization.GameEvent_GrenadeEvent{
+					GrenadeEvent: &serialization.GrenadeEvent{
+						X:      eventData.X,
+						Y:      eventData.Y,
+						NadeId: eventData.NadeId.String(),
+					},
+				}
+			case events.KillEvent:
+				var attackerID, assisterID int32
+				if eventData.AttackerID != nil {
+					attackerID = int32(*eventData.AttackerID)
+				}
+				if eventData.AssisterID != nil {
+					assisterID = int32(*eventData.AssisterID)
+				}
+				protoEvent.Data = &serialization.GameEvent_KillEvent{
+					KillEvent: &serialization.KillEvent{
+						VictimID:      int32(eventData.VictimID),
+						AttackerID:    attackerID,
+						AssisterID:    assisterID,
+						Weapon:        eventData.Weapon,
+						IsWallbang:    eventData.IsWallbang,
+						IsHeadshot:    eventData.IsHeadshot,
+						AssistedFlash: eventData.AssistedFlash,
+						AttackerBlind: eventData.AttackerBlind,
+						NoScope:       eventData.NoScope,
+						ThroughSmoke:  eventData.ThroughSmoke,
+					},
+				}
+			case events.DamageEvent:
+				var playerID int32
+				if eventData.PlayerID != nil {
+					playerID = int32(*eventData.PlayerID)
+				}
+				protoEvent.Data = &serialization.GameEvent_DamageEvent{
+					DamageEvent: &serialization.DamageEvent{
+						PlayerID:          playerID,
+						Health:            int32(eventData.Health),
+						Armor:             int32(eventData.Armor),
+						HealthDamageTaken: int32(eventData.HealthDamageTaken),
+						ArmorDamageTaken:  int32(eventData.ArmorDamageTaken),
+					},
+				}
+			case events.InfernoEvent:
+				points := make([]*serialization.Point, len(eventData.Points))
+				for i, p := range eventData.Points {
+					points[i] = &serialization.Point{
+						X: p.X,
+						Y: p.Y,
+					}
+				}
+				protoEvent.Data = &serialization.GameEvent_InfernoEvent{
+					InfernoEvent: &serialization.InfernoEvent{
+						Points: points,
+						NadeId: eventData.NadeId,
+					},
+				}
+			case events.FlashEvent:
+				var playerID int32
+				if eventData.PlayerID != nil {
+					playerID = int32(*eventData.PlayerID)
+				}
+				protoEvent.Data = &serialization.GameEvent_FlashEvent{
+					FlashEvent: &serialization.FlashEvent{
+						PlayerID: playerID,
+						Duration: eventData.Duration,
+					},
+				}
+			case events.EquipmentEvent:
+				var playerID int32
+				var equipment []string
+				if eventData.PlayerID != nil {
+					playerID = int32(*eventData.PlayerID)
+				}
+				if eventData.Equipment != nil {
+					equipment = *eventData.Equipment
+				}
+				protoEvent.Data = &serialization.GameEvent_EquipmentEvent{
+					EquipmentEvent: &serialization.EquipmentEvent{
+						PlayerID:  playerID,
+						Money:     int32(eventData.Money),
+						Equipment: equipment,
+					},
+				}
+			case events.PickupEvent:
+				protoEvent.Data = &serialization.GameEvent_PickupEvent{
+					PickupEvent: &serialization.PickupEvent{
+						EquipmentID: eventData.EquipmentID.String(),
+					},
+				}
+			case events.DropEvent:
+				protoEvent.Data = &serialization.GameEvent_DropEvent{
+					DropEvent: &serialization.DropEvent{
+						EquipmentID:   eventData.EquipmentID.String(),
+						EquipmentName: eventData.EquipmentName,
+						Position: &serialization.Point{
+							X: eventData.Position.X,
+							Y: eventData.Position.Y,
+						},
+					},
+				}
+			case events.BombDroppedEvent:
+				protoEvent.Data = &serialization.GameEvent_BombDroppedEvent{
+					BombDroppedEvent: &serialization.BombDroppedEvent{
+						Position: &serialization.Point{
+							X: eventData.Position.X,
+							Y: eventData.Position.Y,
+						},
+					},
+				}
+			}
+
+			roundEvents.Events[eventIdx] = protoEvent
+		}
+		protoReplay.Events[roundIdx] = roundEvents
+	}
+
+	// Convert Snapshots (2D slice of Snapshot to RoundSnapshots)
+	protoReplay.Snapshots = make([]*serialization.RoundSnapshots, len(r.Snapshots))
+	for roundIdx, round := range r.Snapshots {
+		roundSnapshots := &serialization.RoundSnapshots{
+			Snapshots: make([]*serialization.Snapshot, len(round)),
+		}
+		for snapIdx, snap := range round {
+			protoSnapshot := &serialization.Snapshot{
+				Tick:             int32(snap.Tick),
+				PlayerSnapshots:  make(map[int32]*serialization.PlayerSnapshot),
+				BloomSnapshots:   make(map[string]*serialization.BloomSnapshot),
+				InfernoSnapshots: make(map[int64]*serialization.Points),
+				FlashedSnapshots: make(map[int32]*serialization.FlashedSnapshot),
+			}
+
+			// Convert player snapshots
+			for playerID, playerSnap := range snap.PlayerSnapshots {
+				protoSnapshot.PlayerSnapshots[int32(playerID)] = &serialization.PlayerSnapshot{
+					X:         playerSnap.X,
+					Y:         playerSnap.Y,
+					Yaw:       playerSnap.Yaw,
+					Health:    int32(playerSnap.Health),
+					Armor:     int32(playerSnap.Armor),
+					Team:      int32(playerSnap.Team),
+					Money:     int32(playerSnap.Money),
+					Equipment: playerSnap.Equipment,
+				}
+			}
+
+			// Convert bloom snapshots (ULID to string)
+			for bloomID, bloomSnap := range snap.BloomSnapshots {
+				protoSnapshot.BloomSnapshots[bloomID.String()] = &serialization.BloomSnapshot{
+					X:        bloomSnap.X,
+					Y:        bloomSnap.Y,
+					Type:     bloomSnap.Type,
+					Duration: bloomSnap.Duration,
+				}
+			}
+
+			// Convert inferno snapshots
+			for infernoID, infernoPoints := range snap.InfernoSnapshots {
+				points := make([]*serialization.Point, len(infernoPoints))
+				for i, p := range infernoPoints {
+					points[i] = &serialization.Point{
+						X: p.X,
+						Y: p.Y,
+					}
+				}
+				protoSnapshot.InfernoSnapshots[infernoID] = &serialization.Points{
+					Points: points,
+				}
+			}
+
+			// Convert flashed snapshots
+			for playerID, flashedSnap := range snap.FlashedSnapshots {
+				protoSnapshot.FlashedSnapshots[int32(playerID)] = &serialization.FlashedSnapshot{
+					RemainingTime: flashedSnap.RemainingTime,
+				}
+			}
+
+			// Convert bomb snapshot if present
+			if snap.BombSnapshot != nil {
+				protoSnapshot.BombSnapshot = &serialization.Point{
+					X: snap.BombSnapshot.X,
+					Y: snap.BombSnapshot.Y,
+				}
+			}
+
+			roundSnapshots.Snapshots[snapIdx] = protoSnapshot
+		}
+		protoReplay.Snapshots[roundIdx] = roundSnapshots
+	}
+
+	// Marshal to bytes
+	data, err := proto.Marshal(protoReplay)
+	if err != nil {
+		return err
+	}
+
+	// Write to disk
+	return os.WriteFile(path, data, 0644)
+}
+
+// Helper function to convert EventType to protobuf EventType
+func eventTypeToProto(eventType events.EventType) serialization.EventType {
+	switch eventType {
+	case events.EventFlash:
+		return serialization.EventType_EVENT_FLASH
+	case events.EventSmokeStart:
+		return serialization.EventType_EVENT_SMOKE_START
+	case events.EventSmokeEnd:
+		return serialization.EventType_EVENT_SMOKE_END
+	case events.EventKill:
+		return serialization.EventType_EVENT_KILL
+	case events.EventHe:
+		return serialization.EventType_EVENT_HE
+	case events.EventTeamChange:
+		return serialization.EventType_EVENT_TEAM_CHANGE
+	case events.EventInferno:
+		return serialization.EventType_EVENT_INFERNO
+	case events.EventDamage:
+		return serialization.EventType_EVENT_DAMAGE
+	case events.EventPlayerFlashed:
+		return serialization.EventType_EVENT_PLAYER_FLASHED
+	case events.EventEquipmentUpdate:
+		return serialization.EventType_EVENT_EQUIPMENT_UPDATE
+	case events.EventPickup:
+		return serialization.EventType_EVENT_PICKUP
+	case events.EventDrop:
+		return serialization.EventType_EVENT_DROP
+	case events.EventBombDropped:
+		return serialization.EventType_EVENT_BOMB_DROPPED
+	case events.EventBombPickup:
+		return serialization.EventType_EVENT_BOMB_PICKUP
+	default:
+		return serialization.EventType_UNKNOWN
+	}
 }
 
 func (r *Replay) PrintNadeData() {

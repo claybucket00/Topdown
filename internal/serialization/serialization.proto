@@ -1,0 +1,224 @@
+syntax = "proto3";
+package serialization;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "topdown/internal/serialization";
+
+message PlayerMetadata {
+	string name = 1;
+}
+
+message NadeMetadata {
+	string type = 1;
+	int32 thrower = 2;
+}
+
+message Score {
+	int32 ct = 1;
+	int32 t = 2;
+}
+
+message RoundMetadata {
+	Score score = 1;
+	map<int32, int32> playerToTeam = 2;
+	map<int32, PlayerEquipment> playerToEquipment = 3;
+}
+
+message PlayerPosition {
+	double x = 1;
+	double y = 2;
+	float yaw = 3;
+}
+
+message NadePosition {
+	double x = 1;
+	double y = 2;
+}
+
+message FrameData {
+	map<int32, PlayerPosition> playerPositions = 1;
+	map<string, NadePosition> nadePositions = 2;
+}
+
+message PlayerEquipment {
+	repeated string equipment = 1;
+	int32 money = 2;
+	int32 armor = 3;
+}
+
+message PlayerSnapshot {
+	double x = 1;
+	double y = 2;
+	float yaw = 3;
+	int32 health = 4;
+	int32 armor = 5;
+	int32 team = 6;
+	int32 money = 7;
+	repeated string equipment = 8;
+}
+
+message BloomSnapshot {
+	double x = 1;
+	double y = 2;
+	string type = 3;
+	double duration = 4;
+}
+
+message FlashedSnapshot {
+	double remainingTime = 1;
+}
+
+message Point {
+	double x = 1;
+	double y = 2;
+}
+
+message Points {
+	repeated Point points = 1;
+}
+
+message ULID {
+	uint64 low = 1;
+	uint64 high = 2;
+}
+
+message Snapshot {
+	int32 tick = 1;
+	map<int32, PlayerSnapshot> playerSnapshots = 2;
+	map<string, BloomSnapshot> bloomSnapshots = 3;
+	map<int64, Points> infernoSnapshots = 4;
+	map<int32, FlashedSnapshot> flashedSnapshots = 5;
+	Point bombSnapshot = 6;
+}
+
+// Event Types Enum
+enum EventType {
+	UNKNOWN = 0;
+	EVENT_FLASH = 1;
+	EVENT_SMOKE_START = 2;
+	EVENT_SMOKE_END = 3;
+	EVENT_KILL = 4;
+	EVENT_HE = 5;
+	EVENT_TEAM_CHANGE = 6;
+	EVENT_INFERNO = 7;
+	EVENT_DAMAGE = 8;
+	EVENT_PLAYER_FLASHED = 9;
+	EVENT_EQUIPMENT_UPDATE = 10;
+	EVENT_PICKUP = 11;
+	EVENT_DROP = 12;
+	EVENT_BOMB_DROPPED = 13;
+	EVENT_BOMB_PICKUP = 14;
+}
+
+// Event Messages
+message TeamChangeEvent {
+	int32 playerID = 1;
+	int32 team = 2;
+}
+
+message SmokeEvent {
+	double x = 1;
+	double y = 2;
+	string nadeId = 3;
+}
+
+message GrenadeEvent {
+	double x = 1;
+	double y = 2;
+	string nadeId = 3;
+}
+
+message KillEvent {
+	int32 victimID = 1;
+	int32 attackerID = 2;
+	int32 assisterID = 3;
+	string weapon = 4;
+	bool isWallbang = 5;
+	bool isHeadshot = 6;
+	bool assistedFlash = 7;
+	bool attackerBlind = 8;
+	bool noScope = 9;
+	bool throughSmoke = 10;
+}
+
+message DamageEvent {
+	int32 playerID = 1;
+	int32 health = 2;
+	int32 armor = 3;
+	int32 healthDamageTaken = 4;
+	int32 armorDamageTaken = 5;
+}
+
+message InfernoEvent {
+	repeated Point points = 1;
+	int64 nadeId = 2;
+}
+
+message FlashEvent {
+	int32 playerID = 1;
+	int64 duration = 2;
+}
+
+message EquipmentEvent {
+	int32 playerID = 1;
+	int32 money = 2;
+	repeated string equipment = 3;
+}
+
+message PickupEvent {
+	string equipmentID = 1;
+}
+
+message DropEvent {
+	string equipmentID = 1;
+	string equipmentName = 2;
+	Point position = 3;
+}
+
+message BombDroppedEvent {
+	Point position = 1;
+}
+
+message GameEvent {
+	int32 tick = 1;
+	EventType type = 2;
+	oneof data {
+		TeamChangeEvent teamChangeEvent = 3;
+		SmokeEvent smokeEvent = 4;
+		GrenadeEvent grenadeEvent = 5;
+		KillEvent killEvent = 6;
+		FlashEvent flashEvent = 7;
+		DamageEvent damageEvent = 8;
+		InfernoEvent infernoEvent = 9;
+		EquipmentEvent equipmentEvent = 10;
+		PickupEvent pickupEvent = 11;
+		DropEvent dropEvent = 12;
+		BombDroppedEvent bombDroppedEvent = 13;
+	}
+}
+
+message RoundFrames {
+	repeated FrameData frames = 1;
+}
+
+message RoundEvents {
+	repeated GameEvent events = 1;
+}
+
+message RoundSnapshots {
+	repeated Snapshot snapshots = 1;
+}
+
+message Replay {
+	string mapName = 1;
+	double tickRate = 2;
+	map<int32, PlayerMetadata> playersMetadata = 3;
+	map<string, NadeMetadata> nadesMetadata = 4;
+	repeated RoundMetadata roundsMetadata = 5;
+	repeated RoundFrames rounds = 6;
+	repeated RoundEvents events = 7;
+	repeated RoundSnapshots snapshots = 8;
+	google.protobuf.Timestamp last_updated = 9;
+}
+

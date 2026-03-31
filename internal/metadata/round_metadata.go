@@ -7,8 +7,7 @@ import (
 )
 
 type RoundMetadata struct {
-	Score         round.Score         `json:"score"`
-	PlayerToTeams map[int]common.Team `json:"player_to_teams"` // Map of team each player's starting team.
-	//PlayerToEquipment map[int][]string    `json:"playerToEquipment"`
+	Score             round.Score                   `json:"score"`
+	PlayerToTeams     map[int]common.Team           `json:"player_to_teams"` // Map of team each player's starting team.
 	PlayerToEquipment map[int]round.PlayerEquipment `json:"playerToEquipment"`
 }
