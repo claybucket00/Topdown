@@ -47,10 +47,6 @@ type FlashedSnapshot struct {
 	TimeRemaining float64 `json:"timeRemaining"`
 }
 
-type EquipmentSnapshot struct {
-	Equipment []string
-}
-
 type Snapshot struct {
 	Tick             int
 	PlayerSnapshots  map[player.PlayerID]PlayerSnapshot
@@ -165,6 +161,30 @@ func (snap *Snapshot) resetInfernos() {
 	snap.InfernoSnapshots = make(map[int64][]r2.Point)
 }
 
+func (snap *Snapshot) Copy() Snapshot {
+	newSnap := Snapshot{
+		Tick:             snap.Tick,
+		PlayerSnapshots:  make(map[player.PlayerID]PlayerSnapshot),
+		BloomSnapshots:   make(map[ulid.ULID]BloomSnapshot),
+		InfernoSnapshots: make(map[int64][]r2.Point),
+		FlashedSnapshots: make(map[player.PlayerID]FlashedSnapshot),
+		BombSnapshot:     snap.BombSnapshot,
+	}
+	for playerId, playerSnapshot := range snap.PlayerSnapshots {
+		newSnap.PlayerSnapshots[playerId] = playerSnapshot
+	}
+	for bloomId, bloomSnapshot := range snap.BloomSnapshots {
+		newSnap.BloomSnapshots[bloomId] = bloomSnapshot
+	}
+	for infernoId, infernoSnapshot := range snap.InfernoSnapshots {
+		newSnap.InfernoSnapshots[infernoId] = infernoSnapshot
+	}
+	for flashedPlayerId, flashedSnapshot := range snap.FlashedSnapshots {
+		newSnap.FlashedSnapshots[flashedPlayerId] = flashedSnapshot
+	}
+	return newSnap
+}
+
 type Replay struct {
 	MapName        string                              `json:"mapName"`
 	TickRate       float64                             `json:"tickRate"`
@@ -222,6 +242,8 @@ func (rh *ReplayHandler) GenerateReplay() Replay {
 			playerSnapshot := snapshot.PlayerSnapshots[playerposition.PlayerID(playerID)]
 			playerSnapshot.Equipment = playerEquipment.Equipment
 			playerSnapshot.Money = playerEquipment.Money
+			playerSnapshot.Health = 100 // Default health is 100 at the start of the round
+			playerSnapshot.Armor = playerEquipment.Armor
 			snapshot.PlayerSnapshots[playerposition.PlayerID(playerID)] = playerSnapshot
 		}
 
@@ -246,12 +268,12 @@ func (rh *ReplayHandler) GenerateReplay() Replay {
 				snapshot.updateSnapshot(rh.Events[eventIndex])
 				eventIndex++
 			}
-			if tick%SNAPSHOT_INTERVAL == 0 {
+			if (tick-round.StartTick)%SNAPSHOT_INTERVAL == 0 {
 				// Append snapshot
 				snapshot.Tick = tick - round.StartTick   // Convert to 0-based tick for the round
 				snapshot.tickBlooms(timeElasped)         // Remove expired blooms
 				snapshot.tickFlashedPlayers(timeElasped) // Remove expired flashed players
-				replay.Snapshots[i] = append(replay.Snapshots[i], snapshot)
+				replay.Snapshots[i] = append(replay.Snapshots[i], snapshot.Copy())
 			}
 		}
 

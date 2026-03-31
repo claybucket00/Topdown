@@ -10,6 +10,7 @@ type Score struct {
 type PlayerEquipment struct {
 	Equipment []string `json:"equipment"`
 	Money     int      `json:"money"`
+	Armor     int      `json:"armor"`
 }
 
 type Round struct {

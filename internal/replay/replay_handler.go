@@ -109,6 +109,7 @@ func (rh *ReplayHandler) onRoundStart(roundStart event.RoundStart) {
 		rh.currentRound.PlayerToEquipment[player.UserID] = round.PlayerEquipment{
 			Equipment: currentEquipmentStrings,
 			Money:     player.Money(),
+			Armor:     player.Armor(),
 		}
 	}
 

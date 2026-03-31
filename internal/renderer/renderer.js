@@ -66,6 +66,44 @@ class GameState {
         return null;
     }
 
+    applySnapshot(snapshot) {
+        this.players = {};
+        for (const [id, pos] of Object.entries(snapshot.PlayerSnapshots)) {
+            this.players[id] = {
+                id,
+                name: this.playerMeta[id]?.Name,
+                team: pos.Team,
+                alive: pos.Health > 0,
+                health: pos.Health,
+                armor: pos.Armor,
+            };
+            this.playerToEquipment[id] = {
+                equipment: pos.Equipment,
+                money: pos.Money,
+            };
+        }
+        this.blooms = {};
+        for (const [nadeId, bloomSnapshot] of Object.entries(snapshot.BloomSnapshots)) {
+            this.blooms[nadeId] = {
+                x: bloomSnapshot.X,
+                y: bloomSnapshot.Y,
+                type: bloomSnapshot.Type,
+                timeRemaining: bloomSnapshot.Duration,
+            };
+        }
+        this.infernos = {};
+        for (const [infernoId, infernoSnapshot] of Object.entries(snapshot.InfernoSnapshots)) {
+            this.infernos[infernoId] = { points: infernoSnapshot };
+        }
+
+        this.flashedPlayers = {};
+        for (const [playerId, flashSnapshot] of Object.entries(snapshot.FlashedSnapshots)) {
+            this.flashedPlayers[playerId] = { remainingTime: flashSnapshot.TimeRemaining };
+        }
+
+        // TODO: track bomb state.
+    }
+
     // Called every animation frame. Players update discretely per tick;
     // nades are interpolated using the sub-tick progress (0–1).
     applyFrame(frameData, frameIndex, progress) {
@@ -111,6 +149,10 @@ class GameState {
                 delete this.flashedPlayers[playerId];
             }
         }
+    }
+
+    resetInfernos() {
+        this.infernos = {};
     }
 
     applyEvent (event, currentTime) {
@@ -160,6 +202,9 @@ class GameState {
                 const hurtPlayerId = eventData.playerID;
                 const health = eventData.health;
                 this.players[hurtPlayerId].health = health
+                if (health <= 0) {
+                    this.players[hurtPlayerId].alive = false;
+                }
                 break;
             case 9: // Player Flashed
                 const flashedPlayerId = eventData.playerID;
@@ -313,7 +358,7 @@ class Renderer {
         }
 
         for (const inferno of Object.values(state.infernos)) {
-            // console.log("Original points: ", hull.points)
+            console.log("Rendering inferno with points: ", inferno);
             const points = inferno.points.map((point) => radarToCanvas(point.X, point.Y, this.canvas, this.mapImg))
             if (points.length != 0) {
                 for (const point of points) {
@@ -655,13 +700,14 @@ function findFirstSnapshot(snapshots, tick) {
 
     while (left <= right) {
         const mid = Math.floor((left + right) / 2);
-        if (snapshots[mid].tick <= tick) {
+        if (snapshots[mid].Tick <= tick) {
             resultIdx = mid;
             left = mid + 1;
         } else {
             right = mid - 1;
         }
     }
+    return resultIdx;
 }
 
 // ============================================================
@@ -740,11 +786,20 @@ async function init() {
         isScrubbing = false;
         // Apply the scrubbed position
         const percentage = timeSlider.value / timeSlider.max;
-        currentFrame = Math.floor(percentage * frames.length);
+        currentFrame = Math.floor(percentage * frames.length); // Current tick
         accumulator = 0; // Reset accumulator to align with new frame
         lastTime = performance.now(); // Reset timing to prevent large deltas
         elapsedTime = currentFrame * tickDuration; // Sync elapsed time with scrubbed frame
-        eventIdx = findFirstEvent(events, currentFrame); // Sync event index with scrubbed frame
+        const snapshotIdx = findFirstSnapshot(snapshots, currentFrame);
+        const snapshot = snapshots[snapshotIdx];
+        console.log("Snapshot index for scrubbed frame:", snapshotIdx);
+        eventIdx = findFirstEvent(events, snapshot.Tick + 1); // Sync event index with scrubbed snapshot
+        console.log("Event index for scrubbed frame:", eventIdx);
+        state.applySnapshot(snapshot); // Apply snapshot for accurate state
+        while (eventIdx < events.length && events[eventIdx].Tick < currentFrame) {
+            state.applyEvent(events[eventIdx], performance.now() - startTime);
+            eventIdx++;
+        }
     });
 
     // Setup time scrubbing bar
@@ -786,6 +841,7 @@ async function init() {
 
             // Process all events for this frame
             while (eventIdx < events.length && events[eventIdx].Tick == currentFrame) {
+                // state.resetInfernos(); // Clear infernos to stop from
                 state.applyEvent(events[eventIdx], currentTime);
                 eventIdx++;
             }
