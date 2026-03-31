@@ -36,3 +36,6 @@ go.work.sum
 
 # Replay Files
 *.json
+
+# Protobuf Files
+*.binpb
