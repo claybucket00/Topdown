@@ -729,6 +729,12 @@ async function init() {
     canvas.width  = mapImg.width;
     canvas.height = mapImg.height;
 
+    // Testing api data access
+    apiDemos = await fetch("http://localhost:8080/demos").then(r => r.json());
+    apiDemoID = apiDemos.demos[0]?.id;
+    apiMeta = await fetch(`http://localhost:8080/demos/${apiDemoID}`).then(r => r.json());
+    console.log("API Demo Metadata:", apiMeta);
+
     const roundIndex   = 1;
     const frames       = replayData.rounds[roundIndex];
     const events      = replayData.events[roundIndex];
