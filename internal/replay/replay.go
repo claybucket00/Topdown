@@ -24,6 +24,9 @@ import (
 // TODO: Maybe need to store killfeed state as well, if we want perfect scrubbing.
 
 type PlayerSnapshot struct {
+	X         float64 `json:"x"`
+	Y         float64 `json:"y"`
+	Yaw       float32 `json:"yaw"`
 	Health    int
 	Armor     int
 	Team      common.Team
@@ -260,7 +263,15 @@ func (rh *ReplayHandler) GenerateReplay() Replay {
 			frameData, exists := rh.Frames[tick]
 			if exists {
 				roundFrames = append(roundFrames, *frameData)
+				for playerID, playerPosition := range frameData.PlayerPositions {
+					playerSnapshot := snapshot.PlayerSnapshots[playerposition.PlayerID(playerID)]
+					playerSnapshot.X = playerPosition.X
+					playerSnapshot.Y = playerPosition.Y
+					playerSnapshot.Yaw = playerPosition.Yaw
+					snapshot.PlayerSnapshots[playerposition.PlayerID(playerID)] = playerSnapshot
+				}
 			}
+
 			snapshot.resetInfernos() // Reset infernos every tick because we track them per tick. We don't need to accumulate them.
 			for eventIndex < len(rh.Events) && rh.Events[eventIndex].Tick == tick {
 				rh.Events[eventIndex].Tick = rh.Events[eventIndex].Tick - round.StartTick // Convert to 0-based tick for the round

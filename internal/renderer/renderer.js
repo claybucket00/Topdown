@@ -53,7 +53,11 @@ class GameState {
     }
 
     _interpolateNade(trajectory, frameFloat) {
+        if (trajectory.length === 0) return null;
         if (frameFloat < trajectory[0].frame || frameFloat > trajectory[trajectory.length - 1].frame) return null;
+        if (trajectory.length === 1) {
+            return frameFloat === trajectory[0].frame ? { x: trajectory[0].x, y: trajectory[0].y } : null;
+        }
         for (let i = 0; i < trajectory.length - 1; i++) {
             if (frameFloat >= trajectory[i].frame && frameFloat <= trajectory[i + 1].frame) {
                 const t = (frameFloat - trajectory[i].frame) / (trajectory[i + 1].frame - trajectory[i].frame);
@@ -73,6 +77,9 @@ class GameState {
                 id,
                 name: this.playerMeta[id]?.Name,
                 team: pos.Team,
+                x: pos.x,
+                y: pos.y,
+                yaw: pos.yaw,
                 alive: pos.Health > 0,
                 health: pos.Health,
                 armor: pos.Armor,
@@ -128,6 +135,8 @@ class GameState {
         const frameFloat = frameIndex + progress;
         this.nades = {};
         for (const [nadeId, trajectory] of Object.entries(this.nadeTrajectories)) {
+            const explodeTick = this.nadeExplodeTicks?.[nadeId] ?? Infinity;
+            if (frameFloat > explodeTick) continue;
             const pos = this._interpolateNade(trajectory, frameFloat);
             if (pos) this.nades[nadeId] = { id: nadeId, x: pos.x, y: pos.y, type: this.nadeMeta[nadeId]?.Type };
         }
@@ -163,12 +172,10 @@ class GameState {
             case 1: // Flash explode
                 const nadeId4 = eventData.NadeId;
                 this.blooms[nadeId4] = { x: eventData.X, y: eventData.Y, type: this.nadeMeta[nadeId4]?.Type, timeRemaining: 500 }; // Flash with 0.5s duration
-                delete this.nadeTrajectories[nadeId4];
                 break;
             case 2: // Smoke bloom
                 const nadeId = eventData.NadeId;
                 this.blooms[nadeId] = { x: eventData.X, y: eventData.Y, type: this.nadeMeta[nadeId]?.Type, timeRemaining: 18000 }; // Smoke bloom with 18s duration
-                delete this.nadeTrajectories[nadeId];
                 break;
             case 3: // Smoke dissapate
                 const nadeId2 = eventData.NadeId;
@@ -187,7 +194,6 @@ class GameState {
             case 5: // HE explode
                 const nadeId5 = eventData.NadeId;
                 this.blooms[nadeId5] = { x: eventData.X, y: eventData.Y, type: this.nadeMeta[nadeId5]?.Type, timeRemaining: 500 }; // HE bloom with 0.5s duration
-                delete this.nadeTrajectories[nadeId5];
                 break;
             case 6: // Team change event
                 const playerId = eventData.PlayerID;
@@ -358,7 +364,7 @@ class Renderer {
         }
 
         for (const inferno of Object.values(state.infernos)) {
-            console.log("Rendering inferno with points: ", inferno);
+            // console.log("Rendering inferno with points: ", inferno);
             const points = inferno.points.map((point) => radarToCanvas(point.X, point.Y, this.canvas, this.mapImg))
             if (points.length != 0) {
                 for (const point of points) {
@@ -732,6 +738,12 @@ async function init() {
     const totalTime = frames.length / tickRate * 1000
 
     const state    = new GameState(replayData.roundMetadata[roundIndex], replayData.playerMetadata, replayData.nadeMetadata, frames);
+    state.nadeExplodeTicks = {};
+    for (const event of events) {
+        if ([1,2,5].includes(event.Type)) {
+            state.nadeExplodeTicks[event.Data.NadeId] = event.Tick;
+        }
+    }
     const renderer = new Renderer(canvas, mapImg, RenderTheme);
     renderer.currentState = state; // Store state reference for killfeed rendering
 
@@ -786,17 +798,19 @@ async function init() {
         isScrubbing = false;
         // Apply the scrubbed position
         const percentage = timeSlider.value / timeSlider.max;
-        currentFrame = Math.floor(percentage * frames.length); // Current tick
+        currentFrame = Math.floor(percentage * (frames.length - 1)); // Current tick
         accumulator = 0; // Reset accumulator to align with new frame
         lastTime = performance.now(); // Reset timing to prevent large deltas
         elapsedTime = currentFrame * tickDuration; // Sync elapsed time with scrubbed frame
         const snapshotIdx = findFirstSnapshot(snapshots, currentFrame);
         const snapshot = snapshots[snapshotIdx];
-        console.log("Snapshot index for scrubbed frame:", snapshotIdx);
+        // console.log("Snapshot tick", snapshot.Tick);
         eventIdx = findFirstEvent(events, snapshot.Tick + 1); // Sync event index with scrubbed snapshot
-        console.log("Event index for scrubbed frame:", eventIdx);
+        // console.log("Event tick:", events[eventIdx].Tick);
+        // console.log("Current frame after scrubbing:", currentFrame);
         state.applySnapshot(snapshot); // Apply snapshot for accurate state
-        while (eventIdx < events.length && events[eventIdx].Tick < currentFrame) {
+        // state.applyFrame(frames[currentFrame], currentFrame, 0); // Apply frame data for positions
+        while (eventIdx < events.length && events[eventIdx].Tick <= currentFrame) {
             state.applyEvent(events[eventIdx], performance.now() - startTime);
             eventIdx++;
         }
@@ -840,8 +854,8 @@ async function init() {
             state.applyFrame(frames[currentFrame], currentFrame, 0);
 
             // Process all events for this frame
+            state.resetInfernos();
             while (eventIdx < events.length && events[eventIdx].Tick == currentFrame) {
-                // state.resetInfernos(); // Clear infernos to stop from
                 state.applyEvent(events[eventIdx], currentTime);
                 eventIdx++;
             }
