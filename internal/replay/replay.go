@@ -977,7 +977,7 @@ func DeserializeReplayProtobuf(path string) (*Replay, error) {
 			for infernoID, protoPoints := range protoSnapshot.InfernoSnapshots {
 				points := make([]r2.Point, len(protoPoints.Points))
 				for i, p := range protoPoints.Points {
-					points[i] = r2.Point{p.X, p.Y}
+					points[i] = r2.Point{X: p.X, Y: p.Y}
 				}
 				snapshot.InfernoSnapshots[infernoID] = points
 			}
@@ -991,7 +991,7 @@ func DeserializeReplayProtobuf(path string) (*Replay, error) {
 
 			// Convert bomb snapshot if present
 			if protoSnapshot.BombSnapshot != nil {
-				bombPos := r2.Point{protoSnapshot.BombSnapshot.X, protoSnapshot.BombSnapshot.Y}
+				bombPos := r2.Point{X: protoSnapshot.BombSnapshot.X, Y: protoSnapshot.BombSnapshot.Y}
 				snapshot.BombSnapshot = &bombPos
 			}
 
@@ -1010,11 +1010,12 @@ func (r *Replay) RoundToJSON(roundNum int) (map[string]interface{}, error) {
 	}
 
 	roundData := map[string]interface{}{
-		"roundNum": roundNum,
-		"tick":     r.RoundMetadata[roundNum].Score,
-		"frames":   r.Rounds[roundNum],
-		"events":   r.Events[roundNum],
-		"snapshots": r.Snapshots[roundNum],
+		"frames":         r.Rounds[roundNum],
+		"events":         r.Events[roundNum],
+		"snapshots":      r.Snapshots[roundNum],
+		"roundMetadata":  r.RoundMetadata[roundNum],
+		"nadeMetadata":   r.NadeMetadata,
+		"playerMetadata": r.PlayerMetadata,
 	}
 
 	return roundData, nil

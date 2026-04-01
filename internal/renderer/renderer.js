@@ -732,18 +732,26 @@ async function init() {
     // Testing api data access
     apiDemos = await fetch("http://localhost:8080/demos").then(r => r.json());
     apiDemoID = apiDemos.demos[0]?.id;
-    apiMeta = await fetch(`http://localhost:8080/demos/${apiDemoID}`).then(r => r.json());
-    console.log("API Demo Metadata:", apiMeta);
+    demoMetadata = await fetch(`http://localhost:8080/demos/${apiDemoID}`).then(r => r.json());
+    console.log("API Demo Metadata:", demoMetadata);
+
+    // Testing data from api
+    const replayDataFromAPI = await fetch(`http://localhost:8080/demos/${apiDemoID}/rounds/${1}`).then(r => r.json());
 
     const roundIndex   = 1;
-    const frames       = replayData.rounds[roundIndex];
-    const events      = replayData.events[roundIndex];
-    const snapshots = replayData.snapshots[roundIndex];
-    const tickRate     = replayData.tickRate;
+    //const frames       = replayData.rounds[roundIndex];
+    const frames = replayDataFromAPI.frames;
+    //const events      = replayData.events[roundIndex];
+    const events = replayDataFromAPI.events;
+    // const snapshots = replayData.snapshots[roundIndex];
+    const snapshots = replayDataFromAPI.snapshots;
+    // const tickRate     = replayData.tickRate;
+    const tickRate = demoMetadata.tickRate;
     const tickDuration = 1000 / tickRate; // ms per tick (~15.6ms at 64 tick)
     const totalTime = frames.length / tickRate * 1000
 
-    const state    = new GameState(replayData.roundMetadata[roundIndex], replayData.playerMetadata, replayData.nadeMetadata, frames);
+    // const state    = new GameState(replayData.roundMetadata[roundIndex], replayData.playerMetadata, replayData.nadeMetadata, frames);
+    const state    = new GameState(replayDataFromAPI.roundMetadata, replayDataFromAPI.playerMetadata, replayDataFromAPI.nadeMetadata, frames);
     state.nadeExplodeTicks = {};
     for (const event of events) {
         if ([1,2,5].includes(event.Type)) {
