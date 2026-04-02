@@ -33,6 +33,7 @@ go.work.sum
 
 # Demo Files
 *.dem
+/demos/*
 
 # Replay Files
 *.json
