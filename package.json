@@ -1,0 +1,24 @@
+{
+  "name": "topdown",
+  "version": "1.0.0",
+  "description": "2d Demo Viewer for CS2",
+  "homepage": "https://github.com/claybucket00/Topdown#readme",
+  "bugs": {
+    "url": "https://github.com/claybucket00/Topdown/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/claybucket00/Topdown.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "./internal/electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "electron": "^41.1.1"
+  }
+}

@@ -575,7 +575,7 @@ class PlayerCardManager {
             const team = this.playerTeams[playerId];
             const container = team === 3 ? this.ctContainer : this.tContainer;
 
-            if (!this.playerEquipments[playerId].equipment.length) {
+            if (!this.playerEquipments[playerId].equipment) {
                 continue; // Scuffed way to skip spectators. Not sure there is a better way, as sometimes spectators are assigned to a team (not spectate team).
             }
             const card = this._createPlayerCard(playerId, metadata.Name, this.playerEquipments[playerId].equipment, this.playerEquipments[playerId].money);
@@ -611,6 +611,8 @@ class PlayerCardManager {
         } else {
             card.style.opacity = '0.5';
             card.style.borderColor = '#666';
+            // Reset flash overlay on death
+            this.updatePlayerFlash(playerId, null);
         }
 
         card.querySelector('.player-health').textContent = player.health
