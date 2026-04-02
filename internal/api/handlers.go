@@ -112,15 +112,25 @@ func (s *Server) GetRoundHandler(c *gin.Context) {
 		return
 	}
 
-	// Load replay from disk
-	replayObj, err := s.storage.LoadReplay(demoID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+	if s.currentDemo == nil {
+		// Load replay from disk
+		replayObj, err := s.storage.LoadReplay(demoID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		s.currentDemo = replayObj
 	}
 
+	// // Load replay from disk
+	// replayObj, err := s.storage.LoadReplay(demoID)
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
+
 	// Get round data
-	roundData, err := replayObj.RoundToJSON(roundNum)
+	roundData, err := s.currentDemo.RoundToJSON(roundNum)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

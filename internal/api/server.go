@@ -1,6 +1,7 @@
 package api
 
 import (
+	"topdown/internal/replay"
 	"topdown/internal/storage"
 
 	"github.com/gin-contrib/cors"
@@ -9,9 +10,10 @@ import (
 
 // Server represents the API server
 type Server struct {
-	router   *gin.Engine
-	jobQueue *JobQueue
-	storage  *storage.DemoStorage
+	router      *gin.Engine
+	jobQueue    *JobQueue
+	storage     *storage.DemoStorage
+	currentDemo *replay.Replay
 }
 
 // NewServer creates a new API server
