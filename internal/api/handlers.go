@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -45,10 +46,16 @@ func (s *Server) UploadDemoHandler(c *gin.Context) {
 		return
 	}
 
+	filePath := file.Filename
+	demoBase := filepath.Base(filePath)
+	ext := filepath.Ext(demoBase)
+	demoName := strings.TrimSuffix(demoBase, ext)
+
 	// Create and submit parsing job
 	job := &ParseJob{
 		JobID:     uuid.New().String(),
 		DemoID:    demoID,
+		DemoName:  demoName,
 		DemoPath:  tempPath,
 		Status:    JobPending,
 		Progress:  0,

@@ -3,8 +3,6 @@ package api
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 	"topdown/internal/replay"
@@ -27,6 +25,7 @@ const (
 type ParseJob struct {
 	JobID       string     `json:"jobId"`
 	DemoID      string     `json:"demoId"`
+	DemoName    string     `json:"demoName"`
 	DemoPath    string     `json:"-"`
 	Status      JobStatus  `json:"status"`
 	Progress    int        `json:"progress"` // 0-100
@@ -125,14 +124,14 @@ func (jq *JobQueue) processJob(job *ParseJob) {
 	jq.updateJobStatus(job.JobID, JobParsing, 80, "")
 
 	// Get demo file name
-	demoBase := filepath.Base(job.DemoPath)
-	ext := filepath.Ext(demoBase)
-	demoName := strings.TrimSuffix(demoBase, ext)
+	// demoBase := filepath.Base(job.DemoPath)
+	// ext := filepath.Ext(demoBase)
+	// demoName := strings.TrimSuffix(demoBase, ext)
 
 	// Save metadata to disk
 	metadata := &storage.DemoMetadata{
 		ID:         job.DemoID,
-		Name:       demoName,
+		Name:       job.DemoName,
 		MapName:    replayObj.MapName,
 		TickRate:   replayObj.TickRate,
 		RoundCount: len(replayObj.Rounds),
