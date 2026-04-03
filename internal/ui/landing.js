@@ -21,4 +21,30 @@ async function populateDemos() {
     
 }
 
+document.getElementById('upload-btn').addEventListener('click', async () => {
+  if (window.electronAPI?.selectFile) {
+    const path = await window.electronAPI.selectFile();
+    if (!path) {
+      console.log('No file selected');
+      return;
+    }
+    console.log('Selected path:', path);
+    // TODO: load selected demo file via your replay logic
+    return;
+  }
+
+  // Fallback for non-Electron environments (browser) using <input type="file">
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.dem';
+  input.onchange = (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      console.log('Selected path (fallback):', file.path || file.name);
+      // TODO: load selected demo file via your replay logic
+    }
+  };
+  input.click();
+});
+
 populateDemos();

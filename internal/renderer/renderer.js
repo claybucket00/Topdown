@@ -575,7 +575,7 @@ class PlayerCardManager {
             const team = this.playerTeams[playerId];
             const container = team === 3 ? this.ctContainer : this.tContainer;
 
-            if (!this.playerEquipments[playerId].equipment) {
+            if (!this.playerEquipments[playerId] || !this.playerEquipments[playerId].equipment) {
                 continue; // Scuffed way to skip spectators. Not sure there is a better way, as sometimes spectators are assigned to a team (not spectate team).
             }
             const card = this._createPlayerCard(playerId, metadata.Name, this.playerEquipments[playerId].equipment, this.playerEquipments[playerId].money);
@@ -763,7 +763,7 @@ async function init() {
     const renderer = new Renderer(canvas, mapImg, RenderTheme);
     renderer.currentState = state; // Store state reference for killfeed rendering
 
-    const cardManager = new PlayerCardManager(replayData.playerMetadata, replayData.roundMetadata[roundIndex].player_to_teams, state.playerToEquipment);
+    const cardManager = new PlayerCardManager(replayDataFromAPI.playerMetadata, replayDataFromAPI.roundMetadata.player_to_teams, state.playerToEquipment);
     cardManager.initialize(); // Populate initial player cards
 
     let currentFrame = 0;
