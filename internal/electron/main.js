@@ -12,8 +12,8 @@ const createWindow = () => {
     },
   });
 
-  // win.loadFile('./internal/renderer/replay.html')
-  win.loadFile('./internal/ui/landing.html');
+  win.loadFile('./internal/renderer/replay.html')
+  // win.loadFile('./internal/ui/landing.html');
 };
 
 ipcMain.handle('select-demo-file', async () => {
