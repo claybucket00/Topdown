@@ -1,3 +1,4 @@
+let ENDPOINT_PORT = 8080;
 async function populateDemos() {
     try {
         const demosObject = await fetch("http://localhost:8080/demos").then(r => r.json());
@@ -21,6 +22,22 @@ async function populateDemos() {
     
 }
 
+async function uploadDemo(filePath) {
+  try {
+      const formData = new FormData();
+      formData.append('file', filePath);
+      const jobMetadata = await fetch(`http://localhost:${ENDPOINT_PORT}/demos`, {
+      method: 'POST',
+      body: formData
+      }).then(r => r.json());
+      console.log('Job metadata:', jobMetadata);
+      return jobMetadata;
+    } catch (error) {
+      console.error("Error uploading file:", error);
+    }
+}
+
+
 document.getElementById('upload-btn').addEventListener('click', async () => {
   if (window.electronAPI?.selectFile) {
     const path = await window.electronAPI.selectFile();
@@ -29,8 +46,8 @@ document.getElementById('upload-btn').addEventListener('click', async () => {
       return;
     }
     console.log('Selected path:', path);
-    // TODO: load selected demo file via your replay logic
-    return;
+    jobMetadata = await uploadDemo(path);
+    
   }
 
   // Fallback for non-Electron environments (browser) using <input type="file">
