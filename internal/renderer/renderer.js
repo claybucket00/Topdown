@@ -612,7 +612,10 @@ class PlayerCardManager {
             card.style.opacity = '0.5';
             card.style.borderColor = '#666';
             // Reset flash overlay on death
-            this.updatePlayerFlash(playerId, null);
+            // this.updatePlayerFlash(playerId, null);
+            // const overlay = card.querySelector('.player-flash-overlay');
+            // overlay.style.width = '0%';
+            // TODO: Reset flash effect in player card on player death
         }
 
         card.querySelector('.player-health').textContent = player.health

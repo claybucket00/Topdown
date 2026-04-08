@@ -10,6 +10,7 @@ async function populateDemos() {
             const row = `
             <tr>
              <td>${demo.name}</td>
+             <td>${demo.mapName}</td>
              <td>${demo.roundCount}</td>
             </tr>
             `;
@@ -22,10 +23,10 @@ async function populateDemos() {
     
 }
 
-async function uploadDemo(filePath) {
+async function uploadDemo(file) {
   try {
       const formData = new FormData();
-      formData.append('file', filePath);
+      formData.append('file', file);
       const jobMetadata = await fetch(`http://localhost:${ENDPOINT_PORT}/demos`, {
       method: 'POST',
       body: formData
@@ -46,8 +47,9 @@ document.getElementById('upload-btn').addEventListener('click', async () => {
       return;
     }
     console.log('Selected path:', path);
-    jobMetadata = await uploadDemo(path);
-    
+    const file = await window.electronAPI.readFile(path);
+    jobMetadata = await uploadDemo(file);
+    return;
   }
 
   // Fallback for non-Electron environments (browser) using <input type="file">
