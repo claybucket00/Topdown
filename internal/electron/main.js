@@ -14,8 +14,11 @@ const createWindow = () => {
     },
   });
 
-  // win.loadFile('./internal/renderer/replay.html')
-  win.loadFile('./internal/ui/landing.html');
+  if (process.env.NODE_ENV === 'development') {
+    win.loadURL('http://localhost:5173')
+  } else {
+    win.loadFile('./dist/index.html')
+  }
 };
 
 ipcMain.handle('select-demo-file', async () => {

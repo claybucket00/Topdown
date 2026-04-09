@@ -11,7 +11,7 @@ async function populateDemos() {
             <tr>
              <td>${demo.name}</td>
              <td>${demo.mapName}</td>
-             <td>${demo.roundCount}</td>
+             <td>${demo.roundCount} <button type="button" onclick="handleClick('${demo.name}')">View Replay</button> </td>
             </tr>
             `;
 
@@ -22,6 +22,8 @@ async function populateDemos() {
     }
     
 }
+
+
 
 async function uploadDemo(file) {
   try {
