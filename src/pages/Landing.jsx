@@ -55,7 +55,7 @@ export default function Landing({ onViewReplay }) {
               <td>{demo.mapName}</td>
               <td>
                 {demo.roundCount}{' '}
-                <button type="button" onClick={() => onViewReplay(demo.name)}>
+                <button type="button" onClick={() => onViewReplay(demo.id)}>
                   View Replay
                 </button>
               </td>

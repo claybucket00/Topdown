@@ -206,6 +206,7 @@ class GameState {
                 break;
             case 8: // Player Damage
                 const hurtPlayerId = eventData.playerID;
+                if (!this.players[hurtPlayerId]) break;
                 const health = eventData.health;
                 this.players[hurtPlayerId].health = health
                 if (health <= 0) {
@@ -520,7 +521,7 @@ class Renderer {
         this.ctx.textBaseline = "top";
 
         entries.forEach((entry, index) => {
-            const attackerColor = players[entry.attackerId].team == 3 ? this.theme.players.CT : this.theme.players.T;
+            const attackerColor = players[entry.attackerId] && players[entry.attackerId].team == 3 ? this.theme.players.CT : this.theme.players.T;
             const victimColor = players[entry.victimId].team == 3 ? this.theme.players.CT : this.theme.players.T;
             this.ctx.globalAlpha = entry.opacity;
 
@@ -733,14 +734,14 @@ export async function init(demoId) {
     canvas.height = mapImg.height;
 
     // Testing api data access
-    const apiDemos = await fetch("http://localhost:8080/demos").then(r => r.json());
-    const apiDemoID = apiDemos.demos[0]?.id;
-    const demoMetadata = await fetch(`http://localhost:8080/demos/${apiDemoID}`).then(r => r.json());
+    // const apiDemos = await fetch("http://localhost:8080/demos").then(r => r.json());
+    // const apiDemoID = apiDemos.demos[0]?.id;
+    const demoMetadata = await fetch(`http://localhost:8080/demos/${demoId}`).then(r => r.json());
     console.log("API Demo Metadata:", demoMetadata);
 
-    const roundIndex   = 1;
+    const roundIndex   = 0;
     // Testing data from api
-    const replayDataFromAPI = await fetch(`http://localhost:8080/demos/${apiDemoID}/rounds/${roundIndex}`).then(r => r.json());
+    const replayDataFromAPI = await fetch(`http://localhost:8080/demos/${demoId}/rounds/${roundIndex}`).then(r => r.json());
 
     //const frames       = replayData.rounds[roundIndex];
     const frames = replayDataFromAPI.frames;
