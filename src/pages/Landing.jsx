@@ -1,16 +1,53 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import {
+  flexRender,
+  useReactTable,
+  getCoreRowModel,
+} from '@tanstack/react-table'
+import { useQuery } from '@tanstack/react-query'
 
 const API_URL = 'http://localhost:8080'
 
 export default function Landing({ onViewReplay }) {
-  const [demos, setDemos] = useState([])
+  // const [demos, setDemos] = useState([])
 
-  useEffect(() => {
-    fetch(`${API_URL}/demos`)
-      .then(r => r.json())
-      .then(data => setDemos(data.demos || []))
-      .catch(err => console.error('Error fetching demos:', err))
-  }, [])
+  // useEffect(() => {
+  //   fetch(`${API_URL}/demos`)
+  //     .then(r => r.json())
+  //     .then(data => setDemos(data.demos || []))
+  //     .catch(err => console.error('Error fetching demos:', err))
+  // }, [])
+
+  const  {data: demoData, refetch, isFetching} = useQuery({
+    queryKey: ['demos'],
+    queryFn:  () => fetch(`${API_URL}/demos`).then(r => r.json()),
+  })
+
+  const tableColumns = useMemo(() => [
+    {
+      header: 'Name',
+      accessorKey: 'name',
+    },
+    {
+      header: 'Map',
+      accessorKey: 'mapName',
+    },
+    {
+      header: 'Rounds',
+      accessorKey: 'roundCount',
+    },
+  ], [])
+
+  const tableData = useMemo(() => demoData?.demos || [], [demoData])
+
+
+  console.log('Fetched demos:', demoData)
+  
+  const demoTable = useReactTable({
+    columns: tableColumns,
+    data: tableData,
+    getCoreRowModel: getCoreRowModel(),
+  })
 
   async function handleUpload() {
     if (window.electronAPI?.selectFile) {
@@ -38,24 +75,71 @@ export default function Landing({ onViewReplay }) {
     input.click()
   }
 
+  // return (
+  //   <div style={{ padding: 16 }}>
+  //     <table border="1">
+  //       <thead>
+  //         <tr>
+  //           <th>Name</th>
+  //           <th>Map</th>
+  //           <th>Rounds</th>
+  //         </tr>
+  //       </thead>
+  //       <tbody>
+  //         {demos.map(demo => (
+  //           <tr key={demo.name}>
+  //             <td>{demo.name}</td>
+  //             <td>{demo.mapName}</td>
+  //             <td>
+  //               {demo.roundCount}{' '}
+  //               <button type="button" onClick={() => onViewReplay(demo.id, demo.mapName, demo.tickRate, demo.roundCount)}>
+  //                 View Replay
+  //               </button>
+  //             </td>
+  //           </tr>
+  //         ))}
+  //       </tbody>
+  //     </table>
+  //     <button type="button" onClick={handleUpload}>
+  //       Upload Demo
+  //     </button>
+  //   </div>
+  // )
   return (
     <div style={{ padding: 16 }}>
+      <button 
+        onClick={() => refetch()} 
+        disabled={isFetching}
+      >
+        {isFetching ? 'Refreshing...' : 'Refresh Data'}
+      </button>
       <table border="1">
         <thead>
-          <tr>
-            <th>Name</th>
-            <th>Map</th>
-            <th>Rounds</th>
-          </tr>
+          {demoTable.getHeaderGroups().map((headerGroup) => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <th key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                </th>
+              ))}
+            </tr>
+          ))}
         </thead>
         <tbody>
-          {demos.map(demo => (
-            <tr key={demo.name}>
-              <td>{demo.name}</td>
-              <td>{demo.mapName}</td>
+          {demoTable.getRowModel().rows.map((row) => (
+            <tr key={row.id}>
+              {row.getVisibleCells().map((cell) => (
+                <td key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
               <td>
-                {demo.roundCount}{' '}
-                <button type="button" onClick={() => onViewReplay(demo.id)}>
+                <button type="button" onClick={() => onViewReplay(row.original.id, row.original.mapName, row.original.tickRate, row.original.roundCount)}>
                   View Replay
                 </button>
               </td>

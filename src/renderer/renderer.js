@@ -725,9 +725,10 @@ function findFirstSnapshot(snapshots, tick) {
 // ============================================================
 // INIT + ANIMATION LOOP
 // ============================================================
-export async function init(demoId) {
+export async function init(demoId, demoMap, demoTickRate, roundCount) {
     const canvas = document.getElementById("map");
-    const mapImg = await loadImg("../assets/maps/de_mirage_radar_psd.png");
+    // const mapImg = await loadImg("../assets/maps/de_mirage_radar_psd.png");
+    const mapImg = await loadImg(`../assets/maps/${demoMap}_radar_psd.png`);
    
 
     canvas.width  = mapImg.width;
@@ -749,8 +750,8 @@ export async function init(demoId) {
     const events = replayDataFromAPI.events;
     // const snapshots = replayData.snapshots[roundIndex];
     const snapshots = replayDataFromAPI.snapshots;
-    // const tickRate     = replayData.tickRate;
-    const tickRate = demoMetadata.tickRate;
+    const tickRate     = demoTickRate;
+    // const tickRate = demoMetadata.tickRate;
     const tickDuration = 1000 / tickRate; // ms per tick (~15.6ms at 64 tick)
     const totalTime = frames.length / tickRate * 1000
 

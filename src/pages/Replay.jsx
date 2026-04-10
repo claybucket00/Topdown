@@ -2,10 +2,10 @@ import { useEffect } from 'react'
 import { init } from '../renderer/renderer'
 import '../styles/replay.css'
 
-export default function Replay({ demoId, onBack }) {
+export default function Replay({ demoId, demoMap, tickRate, roundCount, onBack }) {
   useEffect(() => {
-    init(demoId).catch(err => console.error('Renderer init failed:', err))
-  }, [demoId])
+    init(demoId, demoMap, tickRate, roundCount).catch(err => console.error('Renderer init failed:', err))
+  }, [demoId, demoMap, tickRate, roundCount])
 
   return (
     <>
