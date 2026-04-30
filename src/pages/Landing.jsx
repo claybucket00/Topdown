@@ -75,36 +75,6 @@ export default function Landing({ onViewReplay }) {
     input.click()
   }
 
-  // return (
-  //   <div style={{ padding: 16 }}>
-  //     <table border="1">
-  //       <thead>
-  //         <tr>
-  //           <th>Name</th>
-  //           <th>Map</th>
-  //           <th>Rounds</th>
-  //         </tr>
-  //       </thead>
-  //       <tbody>
-  //         {demos.map(demo => (
-  //           <tr key={demo.name}>
-  //             <td>{demo.name}</td>
-  //             <td>{demo.mapName}</td>
-  //             <td>
-  //               {demo.roundCount}{' '}
-  //               <button type="button" onClick={() => onViewReplay(demo.id, demo.mapName, demo.tickRate, demo.roundCount)}>
-  //                 View Replay
-  //               </button>
-  //             </td>
-  //           </tr>
-  //         ))}
-  //       </tbody>
-  //     </table>
-  //     <button type="button" onClick={handleUpload}>
-  //       Upload Demo
-  //     </button>
-  //   </div>
-  // )
   return (
     <div style={{ padding: 16 }}>
       <button 

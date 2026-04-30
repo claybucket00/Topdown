@@ -279,11 +279,12 @@ func (rh *ReplayHandler) onItemDrop(itemDrop event.ItemDrop) {
 func (rh *ReplayHandler) onBombDropped(_ event.BombDropped) {
 	rh.bombDropped = true
 	bombState := rh.parser.GameState().Bomb()
+	radarX, radarY := rh.mapMetdata.WorldToRadarCoords(bombState.Position().X, bombState.Position().Y)
 	rh.Events = append(rh.Events, events.GameEvent{
 		Tick: rh.parser.GameState().IngameTick(),
 		Type: events.EventBombDropped,
 		Data: events.BombDroppedEvent{
-			Position: r2.Point{X: bombState.Position().X, Y: bombState.Position().Y},
+			Position: r2.Point{X: radarX, Y: radarY},
 		},
 	})
 }

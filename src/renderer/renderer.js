@@ -28,6 +28,7 @@ class GameState {
         this.nades   = {}; // { nadeId  -> { id, x, y, type } }
         this.blooms = {}; // { nadeId -> { x, y, type, timeRemaining } }
         this.infernos = {};
+        this.bombPosition = null;
         this.killfeed = new Killfeed();
         this.flashedPlayers = {}; // { playerId -> { remainingTimeMs } }
         this.playerToEquipment = {}; // { playerId -> { equipment, money } }
@@ -232,9 +233,11 @@ class GameState {
                 break;
             case 13: // Bomb Drop
                 console.log("Bomb was dropped at position (" + eventData.position.X + ", " + eventData.position.Y + ")");
+                this.bombPosition = {x: eventData.position.X, y: eventData.position.Y}
                 break;
             case 14: // Bomb Pickup
                 console.log("Bomb was picked up");
+                this.bombPosition = null;
                 break;
         }
     }
@@ -297,6 +300,9 @@ const RenderTheme = {
         he: "#ff9900",
         molotov: "#ff3300",
         decoy:"#91580d"
+    },
+    bomb: {
+        color: "#ff3300",
     },
     effects: {
         smokeColor: "rgba(120,120,120,0.70)",
@@ -373,6 +379,14 @@ class Renderer {
                 }
             }
             // console.log("Shifted points: ", points)
+        }
+
+        if (state.bombPosition) {
+            // console.log("Bomb position: " + (state.bombPosition.x) + (state.bombPosition.y))
+            const bombColor = this.theme.bomb.color;
+            const pos = radarToCanvas(state.bombPosition.x, state.bombPosition.y, canvas, mapImg)
+            // console.log("Drawing bomb at: " + pos.x + " " + pos.y)
+            this._drawDot(pos.x, pos.y, bombColor, 4)
         }
 
         // Render killfeed
@@ -832,6 +846,10 @@ export async function init(demoId, demoMap, demoTickRate, roundCount) {
         while (eventIdx < events.length && events[eventIdx].Tick <= currentFrame) {
             state.applyEvent(events[eventIdx], performance.now() - startTime);
             eventIdx++;
+        }
+        console.log("Players after scrub:")
+        for (const player of Object.entries(state.players)) {
+            console.log(player)
         }
     });
 
