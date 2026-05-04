@@ -5,6 +5,7 @@ import {
   getCoreRowModel,
 } from '@tanstack/react-table'
 import { useQuery } from '@tanstack/react-query'
+import '../styles/Landing.css'
 
 const API_URL = 'http://localhost:8080'
 
@@ -76,14 +77,20 @@ export default function Landing({ onViewReplay }) {
   }
 
   return (
-    <div style={{ padding: 16 }}>
-      <button 
-        onClick={() => refetch()} 
-        disabled={isFetching}
-      >
-        {isFetching ? 'Refreshing...' : 'Refresh Data'}
-      </button>
-      <table border="1">
+    <div className="landing">
+      <div className="landing-actions">
+        <button
+          className="btn"
+          onClick={() => refetch()}
+          disabled={isFetching}
+        >
+          {isFetching ? 'Refreshing...' : 'Refresh'}
+        </button>
+        <button className="btn btn-primary" type="button" onClick={handleUpload}>
+          Upload Demo
+        </button>
+      </div>
+      <table className="demo-table">
         <thead>
           {demoTable.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
@@ -97,6 +104,7 @@ export default function Landing({ onViewReplay }) {
                       )}
                 </th>
               ))}
+              <th />
             </tr>
           ))}
         </thead>
@@ -109,7 +117,7 @@ export default function Landing({ onViewReplay }) {
                 </td>
               ))}
               <td>
-                <button type="button" onClick={() => onViewReplay(row.original.id, row.original.mapName, row.original.tickRate, row.original.roundCount)}>
+                <button className="btn btn-primary" type="button" onClick={() => onViewReplay(row.original.id, row.original.mapName, row.original.tickRate, row.original.roundCount)}>
                   View Replay
                 </button>
               </td>
@@ -117,9 +125,6 @@ export default function Landing({ onViewReplay }) {
           ))}
         </tbody>
       </table>
-      <button type="button" onClick={handleUpload}>
-        Upload Demo
-      </button>
     </div>
   )
 }

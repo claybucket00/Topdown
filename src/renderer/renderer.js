@@ -1,3 +1,5 @@
+import { dataTagErrorSymbol } from "@tanstack/react-query";
+
 function loadImg(src) {
     return new Promise((resolve, reject) => {
         const img = new Image();
@@ -739,7 +741,7 @@ function findFirstSnapshot(snapshots, tick) {
 // ============================================================
 // INIT + ANIMATION LOOP
 // ============================================================
-export async function init(demoId, demoMap, demoTickRate, roundCount) {
+export async function init(demoId, demoMap, demoTickRate) {
     const canvas = document.getElementById("map");
     // const mapImg = await loadImg("../assets/maps/de_mirage_radar_psd.png");
     const mapImg = await loadImg(`../assets/maps/${demoMap}_radar_psd.png`);
@@ -755,32 +757,33 @@ export async function init(demoId, demoMap, demoTickRate, roundCount) {
     console.log("API Demo Metadata:", demoMetadata);
 
     const roundIndex   = 0;
+    const roundCount = demoMetadata.roundCount;
     // Testing data from api
     const replayDataFromAPI = await fetch(`http://localhost:8080/demos/${demoId}/rounds/${roundIndex}`).then(r => r.json());
 
     //const frames       = replayData.rounds[roundIndex];
-    const frames = replayDataFromAPI.frames;
+    let frames = replayDataFromAPI.frames;
     //const events      = replayData.events[roundIndex];
-    const events = replayDataFromAPI.events;
+    let events = replayDataFromAPI.events;
     // const snapshots = replayData.snapshots[roundIndex];
-    const snapshots = replayDataFromAPI.snapshots;
+    let snapshots = replayDataFromAPI.snapshots;
     const tickRate     = demoTickRate;
     // const tickRate = demoMetadata.tickRate;
     const tickDuration = 1000 / tickRate; // ms per tick (~15.6ms at 64 tick)
-    const totalTime = frames.length / tickRate * 1000
+    let totalTime = frames.length / tickRate * 1000
 
     // const state    = new GameState(replayData.roundMetadata[roundIndex], replayData.playerMetadata, replayData.nadeMetadata, frames);
-    const state    = new GameState(replayDataFromAPI.roundMetadata, replayDataFromAPI.playerMetadata, replayDataFromAPI.nadeMetadata, frames);
+    let state    = new GameState(replayDataFromAPI.roundMetadata, replayDataFromAPI.playerMetadata, replayDataFromAPI.nadeMetadata, frames);
     state.nadeExplodeTicks = {};
     for (const event of events) {
         if ([1,2,5].includes(event.Type)) {
             state.nadeExplodeTicks[event.Data.NadeId] = event.Tick;
         }
     }
-    const renderer = new Renderer(canvas, mapImg, RenderTheme);
+    let renderer = new Renderer(canvas, mapImg, RenderTheme);
     renderer.currentState = state; // Store state reference for killfeed rendering
 
-    const cardManager = new PlayerCardManager(replayDataFromAPI.playerMetadata, replayDataFromAPI.roundMetadata.player_to_teams, state.playerToEquipment);
+    let cardManager = new PlayerCardManager(replayDataFromAPI.playerMetadata, replayDataFromAPI.roundMetadata.player_to_teams, state.playerToEquipment);
     cardManager.initialize(); // Populate initial player cards
 
     let currentFrame = 0;
@@ -816,6 +819,43 @@ export async function init(demoId, demoMap, demoTickRate, roundCount) {
         });
     });
 
+    // Select round callback
+    async function selectRound(roundIdx) {
+        const roundData = await fetch(`http://localhost:8080/demos/${demoId}/rounds/${roundIdx}`).then(r => r.json());
+        frames = roundData.frames;
+        events = roundData.events;
+        snapshots = roundData.snapshots;
+        state.applySnapshot(snapshots[0]);
+        currentFrame = 0;
+        accumulator = 0;
+        lastTime     = performance.now();
+        startTime    = performance.now();
+        elapsedTime = 0;
+        eventIdx = 0;
+        isPaused = false;
+        playPauseBtn.textContent = '⏸';
+        playbackSpeed = 1;
+
+        totalTime = frames.length / tickRate * 1000
+        totalTimeDisplay.textContent = formatMillisecondsToMSS(totalTime);
+
+        currentTimeDisplay.textContent = formatMillisecondsToMSS(0);
+
+        timeSlider.value = 0;
+
+        state = new GameState(roundData.roundMetadata, roundData.playerMetadata, roundData.nadeMetadata, frames);
+        state.nadeExplodeTicks = {};
+        for (const event of events) {
+            if ([1,2,5].includes(event.Type)) {
+                state.nadeExplodeTicks[event.Data.NadeId] = event.Tick;
+            }
+        }
+        renderer.currentState = state; // Update renderer's state reference for killfeed rendering
+
+        const cardManager = new PlayerCardManager(roundData.playerMetadata, roundData.roundMetadata.player_to_teams, state.playerToEquipment);
+        cardManager.initialize(); // Populate initial player cards
+    }
+
     // Setup time scrubbing slider
     const timeSlider = document.getElementById('replay-progress');
     let isScrubbing = false;
@@ -846,10 +886,6 @@ export async function init(demoId, demoMap, demoTickRate, roundCount) {
         while (eventIdx < events.length && events[eventIdx].Tick <= currentFrame) {
             state.applyEvent(events[eventIdx], performance.now() - startTime);
             eventIdx++;
-        }
-        console.log("Players after scrub:")
-        for (const player of Object.entries(state.players)) {
-            console.log(player)
         }
     });
 
@@ -919,5 +955,7 @@ export async function init(demoId, demoMap, demoTickRate, roundCount) {
     }
 
     requestAnimationFrame(loop);
+
+    return { selectRound, roundCount };
 }
 

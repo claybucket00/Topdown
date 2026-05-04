@@ -216,3 +216,12 @@
     border-color: #ff6b35;
     color: #fff;
 }
+
+.dropdown-menu {
+    position: absolute;
+    bottom: 100%;
+    background-color: #fff;
+    border: '1px solid #ccc';
+    padding: 10px;
+    z-index: 1;
+}

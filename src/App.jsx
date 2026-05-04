@@ -14,7 +14,6 @@ export default function App() {
         demoId={view.demoId}
         demoMap={view.demoMap}
         tickRate={view.tickRate}
-        roundCount={view.roundCount}
         onBack={() => setView({ page: 'landing' })}
       />
     )
@@ -22,7 +21,7 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-    <Landing onViewReplay={(demoId, demoMap, tickRate, roundCount) => setView({ page: 'replay', demoId, demoMap, tickRate, roundCount })} />
+    <Landing onViewReplay={(demoId, demoMap, tickRate) => setView({ page: 'replay', demoId, demoMap, tickRate })} />
     </QueryClientProvider>
   )
 }
