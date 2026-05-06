@@ -64,6 +64,7 @@ func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 	parser.RegisterEventHandler(rh.onBombDropped)
 	parser.RegisterEventHandler(rh.onBombPickup)
 	parser.RegisterEventHandler(rh.onBombPlant)
+	parser.RegisterEventHandler(rh.onRoundEndOfficial)
 
 	return rh
 }
@@ -123,8 +124,8 @@ func (rh *ReplayHandler) onRoundEnd(roundEnd event.RoundEnd) {
 	if rh.currentRound == nil {
 		return
 	}
-	rh.currentRound.EndTick = rh.parser.GameState().IngameTick()
-	if rh.currentRound.StartTick == rh.currentRound.EndTick {
+	// rh.currentRound.EndTick = rh.parser.GameState().IngameTick()
+	if rh.currentRound.StartTick == rh.parser.GameState().IngameTick() {
 		return // Skip rounds that start and end on the same tick
 	}
 
@@ -137,13 +138,25 @@ func (rh *ReplayHandler) onRoundEnd(roundEnd event.RoundEnd) {
 		rh.currentRound.Score.T = roundEnd.LoserState.Score()
 		rh.currentRound.Score.CT = roundEnd.WinnerState.Score()
 	}
-	rh.Rounds = append(rh.Rounds, *rh.currentRound)
-	rh.currentRound = nil
-	rh.dead = make(map[int]struct{}) // Reset dead players for next round. We do this on round end instead of round start because we cannot guarantee round start will process before onTickDone
-
-	// rh.currentRound.EndTick = rh.parser.GameState().IngameTick()
 	// rh.Rounds = append(rh.Rounds, *rh.currentRound)
 	// rh.currentRound = nil
+	// rh.dead = make(map[int]struct{}) // Reset dead players for next round. We do this on round end instead of round start because we cannot guarantee round start will process before onTickDone
+}
+
+func (rh *ReplayHandler) onRoundEndOfficial(_ event.RoundEndOfficial) {
+	if rh.parser.GameState().IsWarmupPeriod() {
+		return
+	}
+	if rh.currentRound == nil {
+		return
+	}
+	rh.currentRound.EndTick = rh.parser.GameState().IngameTick()
+	if rh.currentRound.StartTick == rh.currentRound.EndTick {
+		return // Skip rounds that start and end on the same tick
+	}
+	rh.Rounds = append(rh.Rounds, *rh.currentRound)
+	rh.currentRound = nil
+	rh.dead = make(map[int]struct{})
 }
 
 func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
