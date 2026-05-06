@@ -103,6 +103,23 @@ func (s *Server) GetDemoHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, metadata)
 }
 
+func (s *Server) DeleteDemoHandler(c *gin.Context) {
+	demoID := c.Param("demoId")
+
+	if !s.storage.DemoExists(demoID) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Demo not found"})
+		return
+	}
+
+	err := s.storage.DeleteReplay(demoID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Demo deleted successfully"})
+}
+
 // GetRoundHandler returns round data for a specific round
 func (s *Server) GetRoundHandler(c *gin.Context) {
 	demoID := c.Param("demoId")

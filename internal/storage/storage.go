@@ -40,6 +40,11 @@ func (ds *DemoStorage) SaveReplay(demoID string, r *replay.Replay) error {
 	return r.SerializeReplayProtobuf(replayPath)
 }
 
+func (ds *DemoStorage) DeleteReplay(demoID string) error {
+	demoDir := filepath.Join(ds.basePath, demoID)
+	return os.RemoveAll(demoDir)
+}
+
 // LoadReplay loads a replay from protobuf
 func (ds *DemoStorage) LoadReplay(demoID string) (*replay.Replay, error) {
 	replayPath := filepath.Join(ds.basePath, demoID, "replay.pb")

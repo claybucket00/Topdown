@@ -46,8 +46,9 @@ func (s *Server) setupRoutes() {
 	// Job status
 	s.router.GET("/demos/jobs/:jobId/status", s.GetJobStatusHandler)
 
-	// Demo metadata
+	// Individual Demos
 	s.router.GET("/demos/:demoId", s.GetDemoHandler)
+	s.router.DELETE("/demos/:demoId", s.DeleteDemoHandler)
 
 	// Round data
 	s.router.GET("/demos/:demoId/rounds/:roundNum", s.GetRoundHandler)
