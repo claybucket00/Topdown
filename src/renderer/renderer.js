@@ -187,11 +187,16 @@ class GameState {
             case 4: // Kill event
                 const victimId = eventData.VictimID;
                 const attackerId = eventData?.attacker;
+                const assisterId = eventData?.assister;
+                const weaponName = eventData?.Weapon || "";
+                console.log(eventData)
                 if (this.players[victimId]) {
                     this.players[victimId].alive = false;
                     const victimName = this.playerMeta[victimId]?.Name || `Player ${victimId}`;
                     const attackerName = this.playerMeta[attackerId]?.Name || `Player ${attackerId}`;
-                    this.killfeed.addKill(attackerId, attackerName, victimId, victimName, currentTime);
+                    const assisterName = this.playerMeta[assisterId]?.Name || "";
+
+                    this.killfeed.addKill(attackerId, attackerName, assisterId, assisterName, victimId, victimName, weaponName, currentTime);
                 }
                 break;
             case 5: // HE explode
@@ -255,12 +260,15 @@ class Killfeed {
         this.displayDuration = displayDuration; // ms
     }
 
-    addKill(attackerId, attackerName, victimId, victimName, currentTime) {
+    addKill(attackerId, attackerName, assisterId, assisterName, victimId, victimName, weaponName, currentTime) {
         this.entries.unshift({
             attackerId,
             attackerName,
+            assisterId,
+            assisterName,
             victimId,
             victimName,
+            weaponName,
             timestamp: currentTime,
             opacity: 1.0
         });
@@ -541,22 +549,36 @@ class Renderer {
             const victimColor = players[entry.victimId].team == 3 ? this.theme.players.CT : this.theme.players.T;
             this.ctx.globalAlpha = entry.opacity;
 
-            let currentX = textStartX + padding
-            this.ctx.fillStyle = attackerColor;
-            this.ctx.fillText(
-                entry.attackerName,
-                currentX,
-                textStartY + padding + (index * lineHeight)
-            );
-            // TODO: Add support for detailed killfeeds
-            currentX += this.ctx.measureText(entry.attackerName).width
+            let currentX = textStartX + padding;
+            let currentText = entry.attackerName;
+            let Y = textStartY + padding + (index * lineHeight);
+            // this.ctx.fillStyle = attackerColor;
+            // this.ctx.fillText(
+            //     currentText,
+            //     currentX,
+            //     textStartY + padding + (index * lineHeight)
+            // );
+            // // TODO: Add support for detailed killfeeds
+            // currentX += this.ctx.measureText(currentText).width
+            currentX = this._drawAndShift(currentText, attackerColor, currentX, Y);
+            if (entry.assisterId) {
+                const assisterColor = players[entry.assisterId] && players[entry.assisterId] == 3 ? this.theme.players.CT : this.theme.players.T;
+                this.ctx.fillStyle = assisterColor;
+                currentText = " + " + entry.assisterName
+                this.ctx.fillText(
+                    currentText,
+                    currentX,
+                    textStartY + padding + (index * lineHeight)
+                )
+                currentX += this.ctx.measureText(" + " + entry.assisterName).width
+            }
             this.ctx.fillStyle = theme.textColor;
             this.ctx.fillText(
-                " -> ",
+                ` ${entry.weaponName} `,
                 currentX,
                 textStartY + padding + (index * lineHeight)
             );
-            currentX += this.ctx.measureText(" -> ").width
+            currentX += this.ctx.measureText(` ${entry.weaponName} `).width
             this.ctx.fillStyle = victimColor;
             this.ctx.fillText(
                 entry.victimName,
@@ -565,6 +587,17 @@ class Renderer {
             );
             this.ctx.globalAlpha = 1.0;
         });
+    }
+    
+    _drawAndShift(text, color, currentX, Y) {
+        this.ctx.fillStyle = color;
+        this.ctx.fillText(
+            text,
+            currentX,
+            Y
+        )
+        currentX += this.ctx.measureText(text).width
+        return currentX
     }
 }
 
