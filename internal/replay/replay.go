@@ -139,7 +139,10 @@ func (snap *Snapshot) updateSnapshot(event events.GameEvent) {
 		if eventData, ok := event.Data.(events.BombDroppedEvent); ok {
 			snap.BombSnapshot = utility.Ptr[r2.Point](eventData.Position)
 		}
-
+	case events.EventBombPlanted:
+		if eventData, ok := event.Data.(events.BombPlantedEvent); ok {
+			snap.BombSnapshot = utility.Ptr[r2.Point](eventData.Position)
+		}
 	}
 }
 
@@ -546,6 +549,15 @@ func (r *Replay) SerializeReplayProtobuf(path string) error {
 						},
 					},
 				}
+			case events.BombPlantedEvent:
+				protoEvent.Data = &serialization.GameEvent_BombPlantedEvent{
+					BombPlantedEvent: &serialization.BombPlantedEvent{
+						Position: &serialization.Point{
+							X: eventData.Position.X,
+							Y: eventData.Position.Y,
+						},
+					},
+				}
 			}
 
 			roundEvents.Events[eventIdx] = protoEvent
@@ -667,6 +679,8 @@ func protoEventTypeToGo(eventType serialization.EventType) events.EventType {
 		return events.EventBombDropped
 	case serialization.EventType_EVENT_BOMB_PICKUP:
 		return events.EventBombPickup
+	case serialization.EventType_EVENT_BOMB_PLANTED:
+		return events.EventBombPlanted
 	default:
 		return events.EventType(0)
 	}
@@ -703,6 +717,8 @@ func eventTypeToProto(eventType events.EventType) serialization.EventType {
 		return serialization.EventType_EVENT_BOMB_DROPPED
 	case events.EventBombPickup:
 		return serialization.EventType_EVENT_BOMB_PICKUP
+	case events.EventBombPlanted:
+		return serialization.EventType_EVENT_BOMB_PLANTED
 	default:
 		return serialization.EventType_UNKNOWN
 	}
@@ -925,6 +941,10 @@ func DeserializeReplayProtobuf(path string) (*Replay, error) {
 			case *serialization.GameEvent_BombDroppedEvent:
 				gameEvent.Data = events.BombDroppedEvent{
 					Position: r2.Point{data.BombDroppedEvent.Position.X, data.BombDroppedEvent.Position.Y},
+				}
+			case *serialization.GameEvent_BombPlantedEvent:
+				gameEvent.Data = events.BombPlantedEvent{
+					Position: r2.Point{data.BombPlantedEvent.Position.X, data.BombPlantedEvent.Position.Y},
 				}
 			}
 

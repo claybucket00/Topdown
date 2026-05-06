@@ -246,6 +246,11 @@ class GameState {
                 console.log("Bomb was picked up");
                 this.bombPosition = null;
                 break;
+            case 15: // Bomb Plant
+                this.bombPosition = {x: eventData.position.X, y: eventData.position.Y}
+                console.log("Bomb was planted");
+                // TODO: Add bomb planted timer
+                break;
         }
     }
 }
@@ -787,7 +792,7 @@ export async function init(demoId, demoMap, demoTickRate) {
     // const apiDemos = await fetch("http://localhost:8080/demos").then(r => r.json());
     // const apiDemoID = apiDemos.demos[0]?.id;
     const demoMetadata = await fetch(`http://localhost:8080/demos/${demoId}`).then(r => r.json());
-    console.log("API Demo Metadata:", demoMetadata);
+    // console.log("API Demo Metadata:", demoMetadata);
 
     const roundIndex   = 0;
     const roundCount = demoMetadata.roundCount;

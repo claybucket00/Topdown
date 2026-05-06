@@ -32,6 +32,7 @@ const (
 	EventDrop
 	EventBombDropped
 	EventBombPickup
+	EventBombPlanted
 )
 
 type TeamChangeEvent struct {
@@ -99,5 +100,9 @@ type DropEvent struct {
 }
 
 type BombDroppedEvent struct {
+	Position r2.Point `json:"position"`
+}
+
+type BombPlantedEvent struct {
 	Position r2.Point `json:"position"`
 }

@@ -1,3 +1,4 @@
+// protoc --go_out=. --go_opt=paths=source_relative internal/serialization/serialization.proto 2>&1 
 syntax = "proto3";
 package serialization;
 
@@ -109,6 +110,7 @@ enum EventType {
 	EVENT_DROP = 12;
 	EVENT_BOMB_DROPPED = 13;
 	EVENT_BOMB_PICKUP = 14;
+	EVENT_BOMB_PLANTED = 15;
 }
 
 // Event Messages
@@ -180,6 +182,10 @@ message BombDroppedEvent {
 	Point position = 1;
 }
 
+message BombPlantedEvent {
+	Point position = 1;
+}
+
 message GameEvent {
 	int32 tick = 1;
 	EventType type = 2;
@@ -195,6 +201,7 @@ message GameEvent {
 		PickupEvent pickupEvent = 11;
 		DropEvent dropEvent = 12;
 		BombDroppedEvent bombDroppedEvent = 13;
+		BombPlantedEvent bombPlantedEvent = 14;
 	}
 }
 

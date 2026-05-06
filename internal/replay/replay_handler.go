@@ -63,6 +63,7 @@ func NewReplayHandler(parser demoinfocs.Parser) *ReplayHandler {
 	parser.RegisterEventHandler(rh.onItemPickup)
 	parser.RegisterEventHandler(rh.onBombDropped)
 	parser.RegisterEventHandler(rh.onBombPickup)
+	parser.RegisterEventHandler(rh.onBombPlant)
 
 	return rh
 }
@@ -298,6 +299,18 @@ func (rh *ReplayHandler) onBombPickup(_ event.BombPickup) {
 		Tick: rh.parser.GameState().IngameTick(),
 		Type: events.EventBombPickup,
 		Data: struct{}{}, // No additional data needed for bomb pickup event
+	})
+}
+
+func (rh *ReplayHandler) onBombPlant(_ event.BombPlanted) {
+	bombState := rh.parser.GameState().Bomb()
+	radarX, radarY := rh.mapMetdata.WorldToRadarCoords(bombState.Position().X, bombState.Position().Y)
+	rh.Events = append(rh.Events, events.GameEvent{
+		Tick: rh.parser.GameState().IngameTick(),
+		Type: events.EventBombPlanted,
+		Data: events.BombPlantedEvent{
+			Position: r2.Point{X: radarX, Y: radarY},
+		},
 	})
 }
 

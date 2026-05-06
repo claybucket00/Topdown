@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v3.6.1
-// source: serialization.proto
+// source: internal/serialization/serialization.proto
 
 package serialization
 
@@ -41,6 +41,7 @@ const (
 	EventType_EVENT_DROP             EventType = 12
 	EventType_EVENT_BOMB_DROPPED     EventType = 13
 	EventType_EVENT_BOMB_PICKUP      EventType = 14
+	EventType_EVENT_BOMB_PLANTED     EventType = 15
 )
 
 // Enum value maps for EventType.
@@ -61,6 +62,7 @@ var (
 		12: "EVENT_DROP",
 		13: "EVENT_BOMB_DROPPED",
 		14: "EVENT_BOMB_PICKUP",
+		15: "EVENT_BOMB_PLANTED",
 	}
 	EventType_value = map[string]int32{
 		"UNKNOWN":                0,
@@ -78,6 +80,7 @@ var (
 		"EVENT_DROP":             12,
 		"EVENT_BOMB_DROPPED":     13,
 		"EVENT_BOMB_PICKUP":      14,
+		"EVENT_BOMB_PLANTED":     15,
 	}
 )
 
@@ -92,11 +95,11 @@ func (x EventType) String() string {
 }
 
 func (EventType) Descriptor() protoreflect.EnumDescriptor {
-	return file_serialization_proto_enumTypes[0].Descriptor()
+	return file_internal_serialization_serialization_proto_enumTypes[0].Descriptor()
 }
 
 func (EventType) Type() protoreflect.EnumType {
-	return &file_serialization_proto_enumTypes[0]
+	return &file_internal_serialization_serialization_proto_enumTypes[0]
 }
 
 func (x EventType) Number() protoreflect.EnumNumber {
@@ -105,7 +108,7 @@ func (x EventType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use EventType.Descriptor instead.
 func (EventType) EnumDescriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{0}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{0}
 }
 
 type PlayerMetadata struct {
@@ -117,7 +120,7 @@ type PlayerMetadata struct {
 
 func (x *PlayerMetadata) Reset() {
 	*x = PlayerMetadata{}
-	mi := &file_serialization_proto_msgTypes[0]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -129,7 +132,7 @@ func (x *PlayerMetadata) String() string {
 func (*PlayerMetadata) ProtoMessage() {}
 
 func (x *PlayerMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[0]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -142,7 +145,7 @@ func (x *PlayerMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlayerMetadata.ProtoReflect.Descriptor instead.
 func (*PlayerMetadata) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{0}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *PlayerMetadata) GetName() string {
@@ -162,7 +165,7 @@ type NadeMetadata struct {
 
 func (x *NadeMetadata) Reset() {
 	*x = NadeMetadata{}
-	mi := &file_serialization_proto_msgTypes[1]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -174,7 +177,7 @@ func (x *NadeMetadata) String() string {
 func (*NadeMetadata) ProtoMessage() {}
 
 func (x *NadeMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[1]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -187,7 +190,7 @@ func (x *NadeMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NadeMetadata.ProtoReflect.Descriptor instead.
 func (*NadeMetadata) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{1}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *NadeMetadata) GetType() string {
@@ -214,7 +217,7 @@ type Score struct {
 
 func (x *Score) Reset() {
 	*x = Score{}
-	mi := &file_serialization_proto_msgTypes[2]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -226,7 +229,7 @@ func (x *Score) String() string {
 func (*Score) ProtoMessage() {}
 
 func (x *Score) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[2]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -239,7 +242,7 @@ func (x *Score) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Score.ProtoReflect.Descriptor instead.
 func (*Score) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{2}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Score) GetCt() int32 {
@@ -267,7 +270,7 @@ type RoundMetadata struct {
 
 func (x *RoundMetadata) Reset() {
 	*x = RoundMetadata{}
-	mi := &file_serialization_proto_msgTypes[3]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -279,7 +282,7 @@ func (x *RoundMetadata) String() string {
 func (*RoundMetadata) ProtoMessage() {}
 
 func (x *RoundMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[3]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -292,7 +295,7 @@ func (x *RoundMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RoundMetadata.ProtoReflect.Descriptor instead.
 func (*RoundMetadata) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{3}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RoundMetadata) GetScore() *Score {
@@ -327,7 +330,7 @@ type PlayerPosition struct {
 
 func (x *PlayerPosition) Reset() {
 	*x = PlayerPosition{}
-	mi := &file_serialization_proto_msgTypes[4]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -339,7 +342,7 @@ func (x *PlayerPosition) String() string {
 func (*PlayerPosition) ProtoMessage() {}
 
 func (x *PlayerPosition) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[4]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -352,7 +355,7 @@ func (x *PlayerPosition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlayerPosition.ProtoReflect.Descriptor instead.
 func (*PlayerPosition) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{4}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *PlayerPosition) GetX() float64 {
@@ -386,7 +389,7 @@ type NadePosition struct {
 
 func (x *NadePosition) Reset() {
 	*x = NadePosition{}
-	mi := &file_serialization_proto_msgTypes[5]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -398,7 +401,7 @@ func (x *NadePosition) String() string {
 func (*NadePosition) ProtoMessage() {}
 
 func (x *NadePosition) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[5]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -411,7 +414,7 @@ func (x *NadePosition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NadePosition.ProtoReflect.Descriptor instead.
 func (*NadePosition) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{5}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *NadePosition) GetX() float64 {
@@ -438,7 +441,7 @@ type FrameData struct {
 
 func (x *FrameData) Reset() {
 	*x = FrameData{}
-	mi := &file_serialization_proto_msgTypes[6]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -450,7 +453,7 @@ func (x *FrameData) String() string {
 func (*FrameData) ProtoMessage() {}
 
 func (x *FrameData) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[6]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -463,7 +466,7 @@ func (x *FrameData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FrameData.ProtoReflect.Descriptor instead.
 func (*FrameData) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{6}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *FrameData) GetPlayerPositions() map[int32]*PlayerPosition {
@@ -491,7 +494,7 @@ type PlayerEquipment struct {
 
 func (x *PlayerEquipment) Reset() {
 	*x = PlayerEquipment{}
-	mi := &file_serialization_proto_msgTypes[7]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -503,7 +506,7 @@ func (x *PlayerEquipment) String() string {
 func (*PlayerEquipment) ProtoMessage() {}
 
 func (x *PlayerEquipment) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[7]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -516,7 +519,7 @@ func (x *PlayerEquipment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlayerEquipment.ProtoReflect.Descriptor instead.
 func (*PlayerEquipment) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{7}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *PlayerEquipment) GetEquipment() []string {
@@ -556,7 +559,7 @@ type PlayerSnapshot struct {
 
 func (x *PlayerSnapshot) Reset() {
 	*x = PlayerSnapshot{}
-	mi := &file_serialization_proto_msgTypes[8]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -568,7 +571,7 @@ func (x *PlayerSnapshot) String() string {
 func (*PlayerSnapshot) ProtoMessage() {}
 
 func (x *PlayerSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[8]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -581,7 +584,7 @@ func (x *PlayerSnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PlayerSnapshot.ProtoReflect.Descriptor instead.
 func (*PlayerSnapshot) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{8}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *PlayerSnapshot) GetX() float64 {
@@ -652,7 +655,7 @@ type BloomSnapshot struct {
 
 func (x *BloomSnapshot) Reset() {
 	*x = BloomSnapshot{}
-	mi := &file_serialization_proto_msgTypes[9]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -664,7 +667,7 @@ func (x *BloomSnapshot) String() string {
 func (*BloomSnapshot) ProtoMessage() {}
 
 func (x *BloomSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[9]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -677,7 +680,7 @@ func (x *BloomSnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BloomSnapshot.ProtoReflect.Descriptor instead.
 func (*BloomSnapshot) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{9}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *BloomSnapshot) GetX() float64 {
@@ -717,7 +720,7 @@ type FlashedSnapshot struct {
 
 func (x *FlashedSnapshot) Reset() {
 	*x = FlashedSnapshot{}
-	mi := &file_serialization_proto_msgTypes[10]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -729,7 +732,7 @@ func (x *FlashedSnapshot) String() string {
 func (*FlashedSnapshot) ProtoMessage() {}
 
 func (x *FlashedSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[10]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -742,7 +745,7 @@ func (x *FlashedSnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FlashedSnapshot.ProtoReflect.Descriptor instead.
 func (*FlashedSnapshot) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{10}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *FlashedSnapshot) GetRemainingTime() float64 {
@@ -762,7 +765,7 @@ type Point struct {
 
 func (x *Point) Reset() {
 	*x = Point{}
-	mi := &file_serialization_proto_msgTypes[11]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -774,7 +777,7 @@ func (x *Point) String() string {
 func (*Point) ProtoMessage() {}
 
 func (x *Point) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[11]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -787,7 +790,7 @@ func (x *Point) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Point.ProtoReflect.Descriptor instead.
 func (*Point) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{11}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Point) GetX() float64 {
@@ -813,7 +816,7 @@ type Points struct {
 
 func (x *Points) Reset() {
 	*x = Points{}
-	mi := &file_serialization_proto_msgTypes[12]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -825,7 +828,7 @@ func (x *Points) String() string {
 func (*Points) ProtoMessage() {}
 
 func (x *Points) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[12]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -838,7 +841,7 @@ func (x *Points) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Points.ProtoReflect.Descriptor instead.
 func (*Points) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{12}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *Points) GetPoints() []*Point {
@@ -858,7 +861,7 @@ type ULID struct {
 
 func (x *ULID) Reset() {
 	*x = ULID{}
-	mi := &file_serialization_proto_msgTypes[13]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -870,7 +873,7 @@ func (x *ULID) String() string {
 func (*ULID) ProtoMessage() {}
 
 func (x *ULID) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[13]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -883,7 +886,7 @@ func (x *ULID) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ULID.ProtoReflect.Descriptor instead.
 func (*ULID) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{13}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ULID) GetLow() uint64 {
@@ -914,7 +917,7 @@ type Snapshot struct {
 
 func (x *Snapshot) Reset() {
 	*x = Snapshot{}
-	mi := &file_serialization_proto_msgTypes[14]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -926,7 +929,7 @@ func (x *Snapshot) String() string {
 func (*Snapshot) ProtoMessage() {}
 
 func (x *Snapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[14]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -939,7 +942,7 @@ func (x *Snapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Snapshot.ProtoReflect.Descriptor instead.
 func (*Snapshot) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{14}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *Snapshot) GetTick() int32 {
@@ -995,7 +998,7 @@ type TeamChangeEvent struct {
 
 func (x *TeamChangeEvent) Reset() {
 	*x = TeamChangeEvent{}
-	mi := &file_serialization_proto_msgTypes[15]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1007,7 +1010,7 @@ func (x *TeamChangeEvent) String() string {
 func (*TeamChangeEvent) ProtoMessage() {}
 
 func (x *TeamChangeEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[15]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1020,7 +1023,7 @@ func (x *TeamChangeEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TeamChangeEvent.ProtoReflect.Descriptor instead.
 func (*TeamChangeEvent) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{15}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *TeamChangeEvent) GetPlayerID() int32 {
@@ -1048,7 +1051,7 @@ type SmokeEvent struct {
 
 func (x *SmokeEvent) Reset() {
 	*x = SmokeEvent{}
-	mi := &file_serialization_proto_msgTypes[16]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1060,7 +1063,7 @@ func (x *SmokeEvent) String() string {
 func (*SmokeEvent) ProtoMessage() {}
 
 func (x *SmokeEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[16]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1073,7 +1076,7 @@ func (x *SmokeEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SmokeEvent.ProtoReflect.Descriptor instead.
 func (*SmokeEvent) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{16}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *SmokeEvent) GetX() float64 {
@@ -1108,7 +1111,7 @@ type GrenadeEvent struct {
 
 func (x *GrenadeEvent) Reset() {
 	*x = GrenadeEvent{}
-	mi := &file_serialization_proto_msgTypes[17]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1120,7 +1123,7 @@ func (x *GrenadeEvent) String() string {
 func (*GrenadeEvent) ProtoMessage() {}
 
 func (x *GrenadeEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[17]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1133,7 +1136,7 @@ func (x *GrenadeEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GrenadeEvent.ProtoReflect.Descriptor instead.
 func (*GrenadeEvent) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{17}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GrenadeEvent) GetX() float64 {
@@ -1175,7 +1178,7 @@ type KillEvent struct {
 
 func (x *KillEvent) Reset() {
 	*x = KillEvent{}
-	mi := &file_serialization_proto_msgTypes[18]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1187,7 +1190,7 @@ func (x *KillEvent) String() string {
 func (*KillEvent) ProtoMessage() {}
 
 func (x *KillEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[18]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1200,7 +1203,7 @@ func (x *KillEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KillEvent.ProtoReflect.Descriptor instead.
 func (*KillEvent) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{18}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *KillEvent) GetVictimID() int32 {
@@ -1286,7 +1289,7 @@ type DamageEvent struct {
 
 func (x *DamageEvent) Reset() {
 	*x = DamageEvent{}
-	mi := &file_serialization_proto_msgTypes[19]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1298,7 +1301,7 @@ func (x *DamageEvent) String() string {
 func (*DamageEvent) ProtoMessage() {}
 
 func (x *DamageEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[19]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1311,7 +1314,7 @@ func (x *DamageEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DamageEvent.ProtoReflect.Descriptor instead.
 func (*DamageEvent) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{19}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *DamageEvent) GetPlayerID() int32 {
@@ -1359,7 +1362,7 @@ type InfernoEvent struct {
 
 func (x *InfernoEvent) Reset() {
 	*x = InfernoEvent{}
-	mi := &file_serialization_proto_msgTypes[20]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1371,7 +1374,7 @@ func (x *InfernoEvent) String() string {
 func (*InfernoEvent) ProtoMessage() {}
 
 func (x *InfernoEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[20]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1384,7 +1387,7 @@ func (x *InfernoEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InfernoEvent.ProtoReflect.Descriptor instead.
 func (*InfernoEvent) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{20}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *InfernoEvent) GetPoints() []*Point {
@@ -1411,7 +1414,7 @@ type FlashEvent struct {
 
 func (x *FlashEvent) Reset() {
 	*x = FlashEvent{}
-	mi := &file_serialization_proto_msgTypes[21]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1423,7 +1426,7 @@ func (x *FlashEvent) String() string {
 func (*FlashEvent) ProtoMessage() {}
 
 func (x *FlashEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[21]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1436,7 +1439,7 @@ func (x *FlashEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FlashEvent.ProtoReflect.Descriptor instead.
 func (*FlashEvent) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{21}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *FlashEvent) GetPlayerID() int32 {
@@ -1464,7 +1467,7 @@ type EquipmentEvent struct {
 
 func (x *EquipmentEvent) Reset() {
 	*x = EquipmentEvent{}
-	mi := &file_serialization_proto_msgTypes[22]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1476,7 +1479,7 @@ func (x *EquipmentEvent) String() string {
 func (*EquipmentEvent) ProtoMessage() {}
 
 func (x *EquipmentEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[22]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1489,7 +1492,7 @@ func (x *EquipmentEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EquipmentEvent.ProtoReflect.Descriptor instead.
 func (*EquipmentEvent) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{22}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *EquipmentEvent) GetPlayerID() int32 {
@@ -1522,7 +1525,7 @@ type PickupEvent struct {
 
 func (x *PickupEvent) Reset() {
 	*x = PickupEvent{}
-	mi := &file_serialization_proto_msgTypes[23]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1534,7 +1537,7 @@ func (x *PickupEvent) String() string {
 func (*PickupEvent) ProtoMessage() {}
 
 func (x *PickupEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[23]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1547,7 +1550,7 @@ func (x *PickupEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PickupEvent.ProtoReflect.Descriptor instead.
 func (*PickupEvent) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{23}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *PickupEvent) GetEquipmentID() string {
@@ -1568,7 +1571,7 @@ type DropEvent struct {
 
 func (x *DropEvent) Reset() {
 	*x = DropEvent{}
-	mi := &file_serialization_proto_msgTypes[24]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1580,7 +1583,7 @@ func (x *DropEvent) String() string {
 func (*DropEvent) ProtoMessage() {}
 
 func (x *DropEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[24]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1593,7 +1596,7 @@ func (x *DropEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DropEvent.ProtoReflect.Descriptor instead.
 func (*DropEvent) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{24}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *DropEvent) GetEquipmentID() string {
@@ -1626,7 +1629,7 @@ type BombDroppedEvent struct {
 
 func (x *BombDroppedEvent) Reset() {
 	*x = BombDroppedEvent{}
-	mi := &file_serialization_proto_msgTypes[25]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1638,7 +1641,7 @@ func (x *BombDroppedEvent) String() string {
 func (*BombDroppedEvent) ProtoMessage() {}
 
 func (x *BombDroppedEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[25]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1651,10 +1654,54 @@ func (x *BombDroppedEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BombDroppedEvent.ProtoReflect.Descriptor instead.
 func (*BombDroppedEvent) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{25}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *BombDroppedEvent) GetPosition() *Point {
+	if x != nil {
+		return x.Position
+	}
+	return nil
+}
+
+type BombPlantedEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Position      *Point                 `protobuf:"bytes,1,opt,name=position,proto3" json:"position,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BombPlantedEvent) Reset() {
+	*x = BombPlantedEvent{}
+	mi := &file_internal_serialization_serialization_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BombPlantedEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BombPlantedEvent) ProtoMessage() {}
+
+func (x *BombPlantedEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_serialization_serialization_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BombPlantedEvent.ProtoReflect.Descriptor instead.
+func (*BombPlantedEvent) Descriptor() ([]byte, []int) {
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *BombPlantedEvent) GetPosition() *Point {
 	if x != nil {
 		return x.Position
 	}
@@ -1678,6 +1725,7 @@ type GameEvent struct {
 	//	*GameEvent_PickupEvent
 	//	*GameEvent_DropEvent
 	//	*GameEvent_BombDroppedEvent
+	//	*GameEvent_BombPlantedEvent
 	Data          isGameEvent_Data `protobuf_oneof:"data"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1685,7 +1733,7 @@ type GameEvent struct {
 
 func (x *GameEvent) Reset() {
 	*x = GameEvent{}
-	mi := &file_serialization_proto_msgTypes[26]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1697,7 +1745,7 @@ func (x *GameEvent) String() string {
 func (*GameEvent) ProtoMessage() {}
 
 func (x *GameEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[26]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1710,7 +1758,7 @@ func (x *GameEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GameEvent.ProtoReflect.Descriptor instead.
 func (*GameEvent) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{26}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *GameEvent) GetTick() int32 {
@@ -1833,6 +1881,15 @@ func (x *GameEvent) GetBombDroppedEvent() *BombDroppedEvent {
 	return nil
 }
 
+func (x *GameEvent) GetBombPlantedEvent() *BombPlantedEvent {
+	if x != nil {
+		if x, ok := x.Data.(*GameEvent_BombPlantedEvent); ok {
+			return x.BombPlantedEvent
+		}
+	}
+	return nil
+}
+
 type isGameEvent_Data interface {
 	isGameEvent_Data()
 }
@@ -1881,6 +1938,10 @@ type GameEvent_BombDroppedEvent struct {
 	BombDroppedEvent *BombDroppedEvent `protobuf:"bytes,13,opt,name=bombDroppedEvent,proto3,oneof"`
 }
 
+type GameEvent_BombPlantedEvent struct {
+	BombPlantedEvent *BombPlantedEvent `protobuf:"bytes,14,opt,name=bombPlantedEvent,proto3,oneof"`
+}
+
 func (*GameEvent_TeamChangeEvent) isGameEvent_Data() {}
 
 func (*GameEvent_SmokeEvent) isGameEvent_Data() {}
@@ -1903,6 +1964,8 @@ func (*GameEvent_DropEvent) isGameEvent_Data() {}
 
 func (*GameEvent_BombDroppedEvent) isGameEvent_Data() {}
 
+func (*GameEvent_BombPlantedEvent) isGameEvent_Data() {}
+
 type RoundFrames struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Frames        []*FrameData           `protobuf:"bytes,1,rep,name=frames,proto3" json:"frames,omitempty"`
@@ -1912,7 +1975,7 @@ type RoundFrames struct {
 
 func (x *RoundFrames) Reset() {
 	*x = RoundFrames{}
-	mi := &file_serialization_proto_msgTypes[27]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1924,7 +1987,7 @@ func (x *RoundFrames) String() string {
 func (*RoundFrames) ProtoMessage() {}
 
 func (x *RoundFrames) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[27]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1937,7 +2000,7 @@ func (x *RoundFrames) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RoundFrames.ProtoReflect.Descriptor instead.
 func (*RoundFrames) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{27}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *RoundFrames) GetFrames() []*FrameData {
@@ -1956,7 +2019,7 @@ type RoundEvents struct {
 
 func (x *RoundEvents) Reset() {
 	*x = RoundEvents{}
-	mi := &file_serialization_proto_msgTypes[28]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1968,7 +2031,7 @@ func (x *RoundEvents) String() string {
 func (*RoundEvents) ProtoMessage() {}
 
 func (x *RoundEvents) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[28]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1981,7 +2044,7 @@ func (x *RoundEvents) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RoundEvents.ProtoReflect.Descriptor instead.
 func (*RoundEvents) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{28}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *RoundEvents) GetEvents() []*GameEvent {
@@ -2000,7 +2063,7 @@ type RoundSnapshots struct {
 
 func (x *RoundSnapshots) Reset() {
 	*x = RoundSnapshots{}
-	mi := &file_serialization_proto_msgTypes[29]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2012,7 +2075,7 @@ func (x *RoundSnapshots) String() string {
 func (*RoundSnapshots) ProtoMessage() {}
 
 func (x *RoundSnapshots) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[29]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2025,7 +2088,7 @@ func (x *RoundSnapshots) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RoundSnapshots.ProtoReflect.Descriptor instead.
 func (*RoundSnapshots) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{29}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *RoundSnapshots) GetSnapshots() []*Snapshot {
@@ -2052,7 +2115,7 @@ type Replay struct {
 
 func (x *Replay) Reset() {
 	*x = Replay{}
-	mi := &file_serialization_proto_msgTypes[30]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2064,7 +2127,7 @@ func (x *Replay) String() string {
 func (*Replay) ProtoMessage() {}
 
 func (x *Replay) ProtoReflect() protoreflect.Message {
-	mi := &file_serialization_proto_msgTypes[30]
+	mi := &file_internal_serialization_serialization_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2077,7 +2140,7 @@ func (x *Replay) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Replay.ProtoReflect.Descriptor instead.
 func (*Replay) Descriptor() ([]byte, []int) {
-	return file_serialization_proto_rawDescGZIP(), []int{30}
+	return file_internal_serialization_serialization_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *Replay) GetMapName() string {
@@ -2143,11 +2206,11 @@ func (x *Replay) GetLastUpdated() *timestamp.Timestamp {
 	return nil
 }
 
-var File_serialization_proto protoreflect.FileDescriptor
+var File_internal_serialization_serialization_proto protoreflect.FileDescriptor
 
-const file_serialization_proto_rawDesc = "" +
+const file_internal_serialization_serialization_proto_rawDesc = "" +
 	"\n" +
-	"\x13serialization.proto\x12\rserialization\x1a\x1fgoogle/protobuf/timestamp.proto\"$\n" +
+	"*internal/serialization/serialization.proto\x12\rserialization\x1a\x1fgoogle/protobuf/timestamp.proto\"$\n" +
 	"\x0ePlayerMetadata\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\"<\n" +
 	"\fNadeMetadata\x12\x12\n" +
@@ -2285,7 +2348,9 @@ const file_serialization_proto_rawDesc = "" +
 	"\requipmentName\x18\x02 \x01(\tR\requipmentName\x120\n" +
 	"\bposition\x18\x03 \x01(\v2\x14.serialization.PointR\bposition\"D\n" +
 	"\x10BombDroppedEvent\x120\n" +
-	"\bposition\x18\x01 \x01(\v2\x14.serialization.PointR\bposition\"\xad\x06\n" +
+	"\bposition\x18\x01 \x01(\v2\x14.serialization.PointR\bposition\"D\n" +
+	"\x10BombPlantedEvent\x120\n" +
+	"\bposition\x18\x01 \x01(\v2\x14.serialization.PointR\bposition\"\xfc\x06\n" +
 	"\tGameEvent\x12\x12\n" +
 	"\x04tick\x18\x01 \x01(\x05R\x04tick\x12,\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x18.serialization.EventTypeR\x04type\x12J\n" +
@@ -2304,7 +2369,8 @@ const file_serialization_proto_rawDesc = "" +
 	" \x01(\v2\x1d.serialization.EquipmentEventH\x00R\x0eequipmentEvent\x12>\n" +
 	"\vpickupEvent\x18\v \x01(\v2\x1a.serialization.PickupEventH\x00R\vpickupEvent\x128\n" +
 	"\tdropEvent\x18\f \x01(\v2\x18.serialization.DropEventH\x00R\tdropEvent\x12M\n" +
-	"\x10bombDroppedEvent\x18\r \x01(\v2\x1f.serialization.BombDroppedEventH\x00R\x10bombDroppedEventB\x06\n" +
+	"\x10bombDroppedEvent\x18\r \x01(\v2\x1f.serialization.BombDroppedEventH\x00R\x10bombDroppedEvent\x12M\n" +
+	"\x10bombPlantedEvent\x18\x0e \x01(\v2\x1f.serialization.BombPlantedEventH\x00R\x10bombPlantedEventB\x06\n" +
 	"\x04data\"?\n" +
 	"\vRoundFrames\x120\n" +
 	"\x06frames\x18\x01 \x03(\v2\x18.serialization.FrameDataR\x06frames\"?\n" +
@@ -2327,7 +2393,7 @@ const file_serialization_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\v2\x1d.serialization.PlayerMetadataR\x05value:\x028\x01\x1a]\n" +
 	"\x12NadesMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x121\n" +
-	"\x05value\x18\x02 \x01(\v2\x1b.serialization.NadeMetadataR\x05value:\x028\x01*\xb6\x02\n" +
+	"\x05value\x18\x02 \x01(\v2\x1b.serialization.NadeMetadataR\x05value:\x028\x01*\xce\x02\n" +
 	"\tEventType\x12\v\n" +
 	"\aUNKNOWN\x10\x00\x12\x0f\n" +
 	"\vEVENT_FLASH\x10\x01\x12\x15\n" +
@@ -2346,23 +2412,24 @@ const file_serialization_proto_rawDesc = "" +
 	"\n" +
 	"EVENT_DROP\x10\f\x12\x16\n" +
 	"\x12EVENT_BOMB_DROPPED\x10\r\x12\x15\n" +
-	"\x11EVENT_BOMB_PICKUP\x10\x0eB Z\x1etopdown/internal/serializationb\x06proto3"
+	"\x11EVENT_BOMB_PICKUP\x10\x0e\x12\x16\n" +
+	"\x12EVENT_BOMB_PLANTED\x10\x0fB Z\x1etopdown/internal/serializationb\x06proto3"
 
 var (
-	file_serialization_proto_rawDescOnce sync.Once
-	file_serialization_proto_rawDescData []byte
+	file_internal_serialization_serialization_proto_rawDescOnce sync.Once
+	file_internal_serialization_serialization_proto_rawDescData []byte
 )
 
-func file_serialization_proto_rawDescGZIP() []byte {
-	file_serialization_proto_rawDescOnce.Do(func() {
-		file_serialization_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_serialization_proto_rawDesc), len(file_serialization_proto_rawDesc)))
+func file_internal_serialization_serialization_proto_rawDescGZIP() []byte {
+	file_internal_serialization_serialization_proto_rawDescOnce.Do(func() {
+		file_internal_serialization_serialization_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_internal_serialization_serialization_proto_rawDesc), len(file_internal_serialization_serialization_proto_rawDesc)))
 	})
-	return file_serialization_proto_rawDescData
+	return file_internal_serialization_serialization_proto_rawDescData
 }
 
-var file_serialization_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_serialization_proto_msgTypes = make([]protoimpl.MessageInfo, 41)
-var file_serialization_proto_goTypes = []any{
+var file_internal_serialization_serialization_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_internal_serialization_serialization_proto_msgTypes = make([]protoimpl.MessageInfo, 42)
+var file_internal_serialization_serialization_proto_goTypes = []any{
 	(EventType)(0),              // 0: serialization.EventType
 	(*PlayerMetadata)(nil),      // 1: serialization.PlayerMetadata
 	(*NadeMetadata)(nil),        // 2: serialization.NadeMetadata
@@ -2390,82 +2457,85 @@ var file_serialization_proto_goTypes = []any{
 	(*PickupEvent)(nil),         // 24: serialization.PickupEvent
 	(*DropEvent)(nil),           // 25: serialization.DropEvent
 	(*BombDroppedEvent)(nil),    // 26: serialization.BombDroppedEvent
-	(*GameEvent)(nil),           // 27: serialization.GameEvent
-	(*RoundFrames)(nil),         // 28: serialization.RoundFrames
-	(*RoundEvents)(nil),         // 29: serialization.RoundEvents
-	(*RoundSnapshots)(nil),      // 30: serialization.RoundSnapshots
-	(*Replay)(nil),              // 31: serialization.Replay
-	nil,                         // 32: serialization.RoundMetadata.PlayerToTeamEntry
-	nil,                         // 33: serialization.RoundMetadata.PlayerToEquipmentEntry
-	nil,                         // 34: serialization.FrameData.PlayerPositionsEntry
-	nil,                         // 35: serialization.FrameData.NadePositionsEntry
-	nil,                         // 36: serialization.Snapshot.PlayerSnapshotsEntry
-	nil,                         // 37: serialization.Snapshot.BloomSnapshotsEntry
-	nil,                         // 38: serialization.Snapshot.InfernoSnapshotsEntry
-	nil,                         // 39: serialization.Snapshot.FlashedSnapshotsEntry
-	nil,                         // 40: serialization.Replay.PlayersMetadataEntry
-	nil,                         // 41: serialization.Replay.NadesMetadataEntry
-	(*timestamp.Timestamp)(nil), // 42: google.protobuf.Timestamp
+	(*BombPlantedEvent)(nil),    // 27: serialization.BombPlantedEvent
+	(*GameEvent)(nil),           // 28: serialization.GameEvent
+	(*RoundFrames)(nil),         // 29: serialization.RoundFrames
+	(*RoundEvents)(nil),         // 30: serialization.RoundEvents
+	(*RoundSnapshots)(nil),      // 31: serialization.RoundSnapshots
+	(*Replay)(nil),              // 32: serialization.Replay
+	nil,                         // 33: serialization.RoundMetadata.PlayerToTeamEntry
+	nil,                         // 34: serialization.RoundMetadata.PlayerToEquipmentEntry
+	nil,                         // 35: serialization.FrameData.PlayerPositionsEntry
+	nil,                         // 36: serialization.FrameData.NadePositionsEntry
+	nil,                         // 37: serialization.Snapshot.PlayerSnapshotsEntry
+	nil,                         // 38: serialization.Snapshot.BloomSnapshotsEntry
+	nil,                         // 39: serialization.Snapshot.InfernoSnapshotsEntry
+	nil,                         // 40: serialization.Snapshot.FlashedSnapshotsEntry
+	nil,                         // 41: serialization.Replay.PlayersMetadataEntry
+	nil,                         // 42: serialization.Replay.NadesMetadataEntry
+	(*timestamp.Timestamp)(nil), // 43: google.protobuf.Timestamp
 }
-var file_serialization_proto_depIdxs = []int32{
+var file_internal_serialization_serialization_proto_depIdxs = []int32{
 	3,  // 0: serialization.RoundMetadata.score:type_name -> serialization.Score
-	32, // 1: serialization.RoundMetadata.playerToTeam:type_name -> serialization.RoundMetadata.PlayerToTeamEntry
-	33, // 2: serialization.RoundMetadata.playerToEquipment:type_name -> serialization.RoundMetadata.PlayerToEquipmentEntry
-	34, // 3: serialization.FrameData.playerPositions:type_name -> serialization.FrameData.PlayerPositionsEntry
-	35, // 4: serialization.FrameData.nadePositions:type_name -> serialization.FrameData.NadePositionsEntry
+	33, // 1: serialization.RoundMetadata.playerToTeam:type_name -> serialization.RoundMetadata.PlayerToTeamEntry
+	34, // 2: serialization.RoundMetadata.playerToEquipment:type_name -> serialization.RoundMetadata.PlayerToEquipmentEntry
+	35, // 3: serialization.FrameData.playerPositions:type_name -> serialization.FrameData.PlayerPositionsEntry
+	36, // 4: serialization.FrameData.nadePositions:type_name -> serialization.FrameData.NadePositionsEntry
 	12, // 5: serialization.Points.points:type_name -> serialization.Point
-	36, // 6: serialization.Snapshot.playerSnapshots:type_name -> serialization.Snapshot.PlayerSnapshotsEntry
-	37, // 7: serialization.Snapshot.bloomSnapshots:type_name -> serialization.Snapshot.BloomSnapshotsEntry
-	38, // 8: serialization.Snapshot.infernoSnapshots:type_name -> serialization.Snapshot.InfernoSnapshotsEntry
-	39, // 9: serialization.Snapshot.flashedSnapshots:type_name -> serialization.Snapshot.FlashedSnapshotsEntry
+	37, // 6: serialization.Snapshot.playerSnapshots:type_name -> serialization.Snapshot.PlayerSnapshotsEntry
+	38, // 7: serialization.Snapshot.bloomSnapshots:type_name -> serialization.Snapshot.BloomSnapshotsEntry
+	39, // 8: serialization.Snapshot.infernoSnapshots:type_name -> serialization.Snapshot.InfernoSnapshotsEntry
+	40, // 9: serialization.Snapshot.flashedSnapshots:type_name -> serialization.Snapshot.FlashedSnapshotsEntry
 	12, // 10: serialization.Snapshot.bombSnapshot:type_name -> serialization.Point
 	12, // 11: serialization.InfernoEvent.points:type_name -> serialization.Point
 	12, // 12: serialization.DropEvent.position:type_name -> serialization.Point
 	12, // 13: serialization.BombDroppedEvent.position:type_name -> serialization.Point
-	0,  // 14: serialization.GameEvent.type:type_name -> serialization.EventType
-	16, // 15: serialization.GameEvent.teamChangeEvent:type_name -> serialization.TeamChangeEvent
-	17, // 16: serialization.GameEvent.smokeEvent:type_name -> serialization.SmokeEvent
-	18, // 17: serialization.GameEvent.grenadeEvent:type_name -> serialization.GrenadeEvent
-	19, // 18: serialization.GameEvent.killEvent:type_name -> serialization.KillEvent
-	22, // 19: serialization.GameEvent.flashEvent:type_name -> serialization.FlashEvent
-	20, // 20: serialization.GameEvent.damageEvent:type_name -> serialization.DamageEvent
-	21, // 21: serialization.GameEvent.infernoEvent:type_name -> serialization.InfernoEvent
-	23, // 22: serialization.GameEvent.equipmentEvent:type_name -> serialization.EquipmentEvent
-	24, // 23: serialization.GameEvent.pickupEvent:type_name -> serialization.PickupEvent
-	25, // 24: serialization.GameEvent.dropEvent:type_name -> serialization.DropEvent
-	26, // 25: serialization.GameEvent.bombDroppedEvent:type_name -> serialization.BombDroppedEvent
-	7,  // 26: serialization.RoundFrames.frames:type_name -> serialization.FrameData
-	27, // 27: serialization.RoundEvents.events:type_name -> serialization.GameEvent
-	15, // 28: serialization.RoundSnapshots.snapshots:type_name -> serialization.Snapshot
-	40, // 29: serialization.Replay.playersMetadata:type_name -> serialization.Replay.PlayersMetadataEntry
-	41, // 30: serialization.Replay.nadesMetadata:type_name -> serialization.Replay.NadesMetadataEntry
-	4,  // 31: serialization.Replay.roundsMetadata:type_name -> serialization.RoundMetadata
-	28, // 32: serialization.Replay.rounds:type_name -> serialization.RoundFrames
-	29, // 33: serialization.Replay.events:type_name -> serialization.RoundEvents
-	30, // 34: serialization.Replay.snapshots:type_name -> serialization.RoundSnapshots
-	42, // 35: serialization.Replay.last_updated:type_name -> google.protobuf.Timestamp
-	8,  // 36: serialization.RoundMetadata.PlayerToEquipmentEntry.value:type_name -> serialization.PlayerEquipment
-	5,  // 37: serialization.FrameData.PlayerPositionsEntry.value:type_name -> serialization.PlayerPosition
-	6,  // 38: serialization.FrameData.NadePositionsEntry.value:type_name -> serialization.NadePosition
-	9,  // 39: serialization.Snapshot.PlayerSnapshotsEntry.value:type_name -> serialization.PlayerSnapshot
-	10, // 40: serialization.Snapshot.BloomSnapshotsEntry.value:type_name -> serialization.BloomSnapshot
-	13, // 41: serialization.Snapshot.InfernoSnapshotsEntry.value:type_name -> serialization.Points
-	11, // 42: serialization.Snapshot.FlashedSnapshotsEntry.value:type_name -> serialization.FlashedSnapshot
-	1,  // 43: serialization.Replay.PlayersMetadataEntry.value:type_name -> serialization.PlayerMetadata
-	2,  // 44: serialization.Replay.NadesMetadataEntry.value:type_name -> serialization.NadeMetadata
-	45, // [45:45] is the sub-list for method output_type
-	45, // [45:45] is the sub-list for method input_type
-	45, // [45:45] is the sub-list for extension type_name
-	45, // [45:45] is the sub-list for extension extendee
-	0,  // [0:45] is the sub-list for field type_name
+	12, // 14: serialization.BombPlantedEvent.position:type_name -> serialization.Point
+	0,  // 15: serialization.GameEvent.type:type_name -> serialization.EventType
+	16, // 16: serialization.GameEvent.teamChangeEvent:type_name -> serialization.TeamChangeEvent
+	17, // 17: serialization.GameEvent.smokeEvent:type_name -> serialization.SmokeEvent
+	18, // 18: serialization.GameEvent.grenadeEvent:type_name -> serialization.GrenadeEvent
+	19, // 19: serialization.GameEvent.killEvent:type_name -> serialization.KillEvent
+	22, // 20: serialization.GameEvent.flashEvent:type_name -> serialization.FlashEvent
+	20, // 21: serialization.GameEvent.damageEvent:type_name -> serialization.DamageEvent
+	21, // 22: serialization.GameEvent.infernoEvent:type_name -> serialization.InfernoEvent
+	23, // 23: serialization.GameEvent.equipmentEvent:type_name -> serialization.EquipmentEvent
+	24, // 24: serialization.GameEvent.pickupEvent:type_name -> serialization.PickupEvent
+	25, // 25: serialization.GameEvent.dropEvent:type_name -> serialization.DropEvent
+	26, // 26: serialization.GameEvent.bombDroppedEvent:type_name -> serialization.BombDroppedEvent
+	27, // 27: serialization.GameEvent.bombPlantedEvent:type_name -> serialization.BombPlantedEvent
+	7,  // 28: serialization.RoundFrames.frames:type_name -> serialization.FrameData
+	28, // 29: serialization.RoundEvents.events:type_name -> serialization.GameEvent
+	15, // 30: serialization.RoundSnapshots.snapshots:type_name -> serialization.Snapshot
+	41, // 31: serialization.Replay.playersMetadata:type_name -> serialization.Replay.PlayersMetadataEntry
+	42, // 32: serialization.Replay.nadesMetadata:type_name -> serialization.Replay.NadesMetadataEntry
+	4,  // 33: serialization.Replay.roundsMetadata:type_name -> serialization.RoundMetadata
+	29, // 34: serialization.Replay.rounds:type_name -> serialization.RoundFrames
+	30, // 35: serialization.Replay.events:type_name -> serialization.RoundEvents
+	31, // 36: serialization.Replay.snapshots:type_name -> serialization.RoundSnapshots
+	43, // 37: serialization.Replay.last_updated:type_name -> google.protobuf.Timestamp
+	8,  // 38: serialization.RoundMetadata.PlayerToEquipmentEntry.value:type_name -> serialization.PlayerEquipment
+	5,  // 39: serialization.FrameData.PlayerPositionsEntry.value:type_name -> serialization.PlayerPosition
+	6,  // 40: serialization.FrameData.NadePositionsEntry.value:type_name -> serialization.NadePosition
+	9,  // 41: serialization.Snapshot.PlayerSnapshotsEntry.value:type_name -> serialization.PlayerSnapshot
+	10, // 42: serialization.Snapshot.BloomSnapshotsEntry.value:type_name -> serialization.BloomSnapshot
+	13, // 43: serialization.Snapshot.InfernoSnapshotsEntry.value:type_name -> serialization.Points
+	11, // 44: serialization.Snapshot.FlashedSnapshotsEntry.value:type_name -> serialization.FlashedSnapshot
+	1,  // 45: serialization.Replay.PlayersMetadataEntry.value:type_name -> serialization.PlayerMetadata
+	2,  // 46: serialization.Replay.NadesMetadataEntry.value:type_name -> serialization.NadeMetadata
+	47, // [47:47] is the sub-list for method output_type
+	47, // [47:47] is the sub-list for method input_type
+	47, // [47:47] is the sub-list for extension type_name
+	47, // [47:47] is the sub-list for extension extendee
+	0,  // [0:47] is the sub-list for field type_name
 }
 
-func init() { file_serialization_proto_init() }
-func file_serialization_proto_init() {
-	if File_serialization_proto != nil {
+func init() { file_internal_serialization_serialization_proto_init() }
+func file_internal_serialization_serialization_proto_init() {
+	if File_internal_serialization_serialization_proto != nil {
 		return
 	}
-	file_serialization_proto_msgTypes[26].OneofWrappers = []any{
+	file_internal_serialization_serialization_proto_msgTypes[27].OneofWrappers = []any{
 		(*GameEvent_TeamChangeEvent)(nil),
 		(*GameEvent_SmokeEvent)(nil),
 		(*GameEvent_GrenadeEvent)(nil),
@@ -2477,23 +2547,24 @@ func file_serialization_proto_init() {
 		(*GameEvent_PickupEvent)(nil),
 		(*GameEvent_DropEvent)(nil),
 		(*GameEvent_BombDroppedEvent)(nil),
+		(*GameEvent_BombPlantedEvent)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_serialization_proto_rawDesc), len(file_serialization_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_internal_serialization_serialization_proto_rawDesc), len(file_internal_serialization_serialization_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   41,
+			NumMessages:   42,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_serialization_proto_goTypes,
-		DependencyIndexes: file_serialization_proto_depIdxs,
-		EnumInfos:         file_serialization_proto_enumTypes,
-		MessageInfos:      file_serialization_proto_msgTypes,
+		GoTypes:           file_internal_serialization_serialization_proto_goTypes,
+		DependencyIndexes: file_internal_serialization_serialization_proto_depIdxs,
+		EnumInfos:         file_internal_serialization_serialization_proto_enumTypes,
+		MessageInfos:      file_internal_serialization_serialization_proto_msgTypes,
 	}.Build()
-	File_serialization_proto = out.File
-	file_serialization_proto_goTypes = nil
-	file_serialization_proto_depIdxs = nil
+	File_internal_serialization_serialization_proto = out.File
+	file_internal_serialization_serialization_proto_goTypes = nil
+	file_internal_serialization_serialization_proto_depIdxs = nil
 }
