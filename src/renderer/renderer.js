@@ -325,12 +325,7 @@ export async function init(demoId, demoMap, demoTickRate) {
     canvas.width  = mapImg.width;
     canvas.height = mapImg.height;
 
-    // Testing api data access
-    // const apiDemos = await fetch("http://localhost:8080/demos").then(r => r.json());
-    // const apiDemoID = apiDemos.demos[0]?.id;
-    //const demoMetadata = await fetch(`http://localhost:8080/demos/${demoId}`).then(r => r.json());
     const demoMetadata = await fetch(`${API_BASE}/demos/${demoId}`).then(r => r.json());
-    // console.log("API Demo Metadata:", demoMetadata);
 
     const roundIndex   = 0;
     const roundCount = demoMetadata.roundCount;
@@ -375,10 +370,16 @@ export async function init(demoId, demoMap, demoTickRate) {
     // Setup play/pause button
     const playPauseBtn = document.getElementById('play-pause-btn');
     playPauseBtn.addEventListener('click', () => {
+        if (currentFrame >= frames.length) {
+            state.applySnapshot(snapshots[0]);
+            resetReplay();
+            requestAnimationFrame(loop);
+            return;
+        }
         isPaused = !isPaused;
         playPauseBtn.textContent = isPaused ? '▶' : '⏸';
         if (!isPaused) {
-            lastTime = performance.now(); // Reset time when resuming
+            lastTime = performance.now();
         }
     });
 
@@ -395,13 +396,7 @@ export async function init(demoId, demoMap, demoTickRate) {
         });
     });
 
-    // Select round callback
-    async function selectRound(roundIdx) {
-        const roundData = await fetch(`${API_BASE}/demos/${demoId}/rounds/${roundIdx}`).then(r => r.json());
-        frames = roundData.frames;
-        events = roundData.events;
-        snapshots = roundData.snapshots;
-        state.applySnapshot(snapshots[0]);
+    function resetReplay() {
         currentFrame = 0;
         accumulator = 0;
         lastTime     = performance.now();
@@ -410,14 +405,21 @@ export async function init(demoId, demoMap, demoTickRate) {
         eventIdx = 0;
         isPaused = false;
         playPauseBtn.textContent = '⏸';
-        playbackSpeed = 1;
+        currentTimeDisplay.textContent = formatMillisecondsToMSS(0);
+        timeSlider.value = 0;
+    }
+
+    // Select round callback
+    async function selectRound(roundIdx) {
+        const roundData = await fetch(`${API_BASE}/demos/${demoId}/rounds/${roundIdx}`).then(r => r.json());
+        frames = roundData.frames;
+        events = roundData.events;
+        snapshots = roundData.snapshots;
+        state.applySnapshot(snapshots[0]);
+        resetReplay();
 
         totalTime = frames.length / tickRate * 1000
         totalTimeDisplay.textContent = formatMillisecondsToMSS(totalTime);
-
-        currentTimeDisplay.textContent = formatMillisecondsToMSS(0);
-
-        timeSlider.value = 0;
 
         state = new GameState(roundData.roundMetadata, roundData.playerMetadata, roundData.nadeMetadata, frames);
         state.nadeExplodeTicks = {};
@@ -497,7 +499,11 @@ export async function init(demoId, demoMap, demoTickRate) {
         while (accumulator >= tickDuration) {
             accumulator -= tickDuration;
             currentFrame++;
-            if (currentFrame >= frames.length) return;
+            if (currentFrame >= frames.length) {
+                isPaused = true;
+                playPauseBtn.textContent = '▶';
+                return;
+            }
 
             // Apply frame for this tick
             state.applyFrame(frames[currentFrame], currentFrame, 0);
