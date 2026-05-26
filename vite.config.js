@@ -7,4 +7,10 @@ export default defineConfig({
   build: {
     outDir: 'dist',
   },
+  server : {
+    '/base_api': {
+      target: 'http://localhost:8080',
+      changeOrigin: true,
+    }
+  }
 })

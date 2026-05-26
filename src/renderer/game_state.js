@@ -1,4 +1,4 @@
-import Killfeed from "./killFeed";
+import Killfeed from "./kill_feed";
 
 export default class GameState {
     constructor(roundMetadata, playerMetadata, nadeMetadata, frames) {

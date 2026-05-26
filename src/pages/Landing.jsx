@@ -7,8 +7,7 @@ import {
 import { useQuery } from '@tanstack/react-query'
 import { useJobPolling } from '../hooks/useJobPolling'
 import '../styles/Landing.css'
-
-const API_URL = 'http://localhost:8080'
+import { API_BASE } from '../config/api'
 
 export default function Landing({ onViewReplay }) {
   const [jobs, setJobs] = useState([])
@@ -16,7 +15,7 @@ export default function Landing({ onViewReplay }) {
 
   const  {data: demoData, refetch, isFetching} = useQuery({
     queryKey: ['demos'],
-    queryFn:  () => fetch(`${API_URL}/demos`).then(r => r.json()),
+    queryFn:  () => fetch(`${API_BASE}/demos`).then(r => r.json()),
   })
 
   const tableColumns = useMemo(() => [
@@ -35,8 +34,6 @@ export default function Landing({ onViewReplay }) {
   ], [])
 
   const tableData = useMemo(() => demoData?.demos || [], [demoData])
-
-  console.log('Fetched demos:', demoData)
   
   const demoTable = useReactTable({
     columns: tableColumns,
@@ -51,7 +48,7 @@ export default function Landing({ onViewReplay }) {
       const file = await window.electronAPI.readFile(path)
       const formData = new FormData()
       formData.append('file', file)
-      const jobMetadata = await fetch(`${API_URL}/demos`, {
+      const jobMetadata = await fetch(`${API_BASE}/demos`, {
         method: 'POST',
         body: formData,
       }).then(r => r.json())
@@ -80,7 +77,7 @@ export default function Landing({ onViewReplay }) {
   async function handleDelete(demoId) {
     if (!window.confirm('Are you sure you want to delete this demo?')) return
     try {
-      const response = await fetch(`${API_URL}/demos/${demoId}`, { method: 'DELETE' })
+      const response = await fetch(`${API_BASE}/demos/${demoId}`, { method: 'DELETE' })
       if (response.ok) {
         refetch()
         new Notification('Demo deleted', { body: `Demo ${demoId} has been deleted` })

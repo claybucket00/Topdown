@@ -168,9 +168,9 @@ func (rh *ReplayHandler) onTickDone(tickDone event.FrameDone) {
 	rh.prevTick = tick
 
 	// Only track first two rounds for now
-	if len(rh.Rounds) > 1 {
-		return
-	}
+	// if len(rh.Rounds) > 1 {
+	// 	return
+	// }
 
 	players := rh.parser.GameState().Participants().Playing()
 	if len(players) > len(rh.PlayerMetadata) {

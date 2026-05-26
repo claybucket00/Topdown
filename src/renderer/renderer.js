@@ -1,6 +1,8 @@
 import { dataTagErrorSymbol } from "@tanstack/react-query";
 import { loadImg, radarToCanvas, formatMillisecondsToMSS, mssToMilliseconds, findFirstEvent, findFirstSnapshot } from "./utility";
-import GameState from "./gameState";
+import GameState from "./game_state";
+import PlayerCardManager from "./player_card_manager";
+import { API_BASE } from "../config/api";
 
 // ============================================================
 // THEME
@@ -312,176 +314,6 @@ class Renderer {
 }
 
 // ============================================================
-// PLAYER CARD MANAGER
-// ============================================================
-class PlayerCardManager {
-    constructor(playerMetadata, playerTeams, playerEquipments) {
-        this.playerMetadata = playerMetadata;
-        this.playerTeams = playerTeams;
-        this.playerEquipments = playerEquipments;
-        this.cardCache = {}; // { playerId -> DOM element }
-        this.ctContainer = document.getElementById('ct-players');
-        this.tContainer = document.getElementById('t-players');
-    }
-
-    initialize() {
-        // Clear existing cards
-        this.ctContainer.innerHTML = '';
-        this.tContainer.innerHTML = '';
-        this.cardCache = {};
-
-        // Create cards for each player, organized by team
-        for (const [playerId, metadata] of Object.entries(this.playerMetadata)) {
-            const team = this.playerTeams[playerId];
-            const container = team === 3 ? this.ctContainer : this.tContainer;
-
-            if (!this.playerEquipments[playerId] || !this.playerEquipments[playerId].equipment) {
-                continue; // Scuffed way to skip spectators. Not sure there is a better way, as sometimes spectators are assigned to a team (not spectate team).
-            }
-            const card = this._createPlayerCard(playerId, metadata.Name, this.playerEquipments[playerId].equipment, this.playerEquipments[playerId].money);
-            this.cardCache[playerId] = card;
-            container.appendChild(card);
-        }
-    }
-
-    _createPlayerCard(playerId, playerName, playerEquipment, playerMoney) {
-        const card = document.createElement('div');
-        card.className = 'player-stats';
-        card.id = `player-card-${playerId}`;
-        card.innerHTML = `
-            <div class="player-name">${playerName}</div>
-            <div class="player-health">100</div>
-            <div class="player-equipment">
-                ${playerEquipment}
-            </div>
-            <div class="player-money">$${playerMoney}</div>
-            <div class="player-flash-overlay"></div>
-        `;
-        return card;
-    }
-
-    updatePlayerStatus(playerId, player) {
-        const card = this.cardCache[playerId];
-        if (!card) return;
-
-        // Update visual feedback based on alive status
-        if (player.alive) {
-            card.style.opacity = '1';
-            card.style.borderColor = '#333';
-        } else {
-            card.style.opacity = '0.5';
-            card.style.borderColor = '#666';
-            // Reset flash overlay on death
-            // this.updatePlayerFlash(playerId, null);
-            // const overlay = card.querySelector('.player-flash-overlay');
-            // overlay.style.width = '0%';
-            // TODO: Reset flash effect in player card on player death
-        }
-
-        card.querySelector('.player-health').textContent = player.health
-    }
-
-    updatePlayerEquipment(playerId, playerEquipment, playerMoney) {
-        const card = this.cardCache[playerId]
-        if (!card || !playerEquipment) return;
-
-        // Skip if no change
-        if (card.querySelector('.player-equipment').textContent.length == playerEquipment.join("").length) return;
-
-        card.querySelector('.player-equipment').textContent = playerEquipment
-        this.playerEquipments[playerId] = playerEquipment
-
-        card.querySelector('.player-money').textContent = '$' + playerMoney
-    }
-
-    updatePlayerFlash(playerId, flashData) {
-        const card = this.cardCache[playerId];
-        if (!card) return;
-
-        const overlay = card.querySelector('.player-flash-overlay');
-        if (!overlay) return;
-
-        if (!flashData || flashData.remainingTimeMs <= 0) {
-            overlay.style.width = '0%';
-            return;
-        }
-        const maxBlindTime = 5000; // 5 seconds
-        const flashPercentage = (flashData.remainingTimeMs / maxBlindTime) * 100;
-        overlay.style.width = flashPercentage + '%';
-    }
-
-    updatePlayerCard(playerId, updates) {
-        const card = this.cardCache[playerId];
-        if (!card) return;
-
-        // Updates object can contain: equipment, hp, armor, etc.
-        // For now, this is a placeholder for future expansion
-    }
-}
-
-// ============================================================
-// UTILITY
-// ============================================================
-// function formatMillisecondsToMSS(totalMs) {
-//     const totalTime = (totalMs / 1000) / 60
-//     const totalMinutes = Math.floor(totalTime);
-//     const totalSeconds = Math.floor((totalTime - totalMinutes) * 60);
-    
-//     return`${String(totalMinutes)}:${String(totalSeconds).padStart(2, '0')}`;
-// }
-
-// function mssToMilliseconds(timeString) {
-//     // console.log(timeString)
-//     const parts = timeString.split(':');
-//     // if (parts.length !== 2) {
-//     //     console.error("Invalid time format. Use 'M:SS' or 'MM:SS'.");
-//     //     return NaN;
-//     // }
-
-//     // console.log(parts[0])
-//     // console.log(parts[1])
-//     const minutes = Number(parts[0]);
-//     const seconds = Number(parts[1]);
-
-//     const totalSeconds = minutes * 60 + seconds;
-//     const totalMilliseconds = totalSeconds * 1000;
-
-//     return totalMilliseconds;
-// }
-
-// function findFirstEvent(events, tick) {
-//     let left = 0;
-//     let right = events.length - 1;
-
-//     while (left <= right) {
-//         const mid = Math.floor((left + right) / 2);
-//         if (events[mid].Tick < tick) {
-//             left = mid + 1;
-//         } else {
-//             right = mid - 1;
-//         }
-//     }
-//     return left;
-// }
-
-// function findFirstSnapshot(snapshots, tick) {
-//     let left = 0;
-//     let right = snapshots.length - 1;
-//     let resultIdx = -1;
-
-//     while (left <= right) {
-//         const mid = Math.floor((left + right) / 2);
-//         if (snapshots[mid].Tick <= tick) {
-//             resultIdx = mid;
-//             left = mid + 1;
-//         } else {
-//             right = mid - 1;
-//         }
-//     }
-//     return resultIdx;
-// }
-
-// ============================================================
 // INIT + ANIMATION LOOP
 // ============================================================
 export async function init(demoId, demoMap, demoTickRate) {
@@ -496,13 +328,14 @@ export async function init(demoId, demoMap, demoTickRate) {
     // Testing api data access
     // const apiDemos = await fetch("http://localhost:8080/demos").then(r => r.json());
     // const apiDemoID = apiDemos.demos[0]?.id;
-    const demoMetadata = await fetch(`http://localhost:8080/demos/${demoId}`).then(r => r.json());
+    //const demoMetadata = await fetch(`http://localhost:8080/demos/${demoId}`).then(r => r.json());
+    const demoMetadata = await fetch(`${API_BASE}/demos/${demoId}`).then(r => r.json());
     // console.log("API Demo Metadata:", demoMetadata);
 
     const roundIndex   = 0;
     const roundCount = demoMetadata.roundCount;
     // Testing data from api
-    const replayDataFromAPI = await fetch(`http://localhost:8080/demos/${demoId}/rounds/${roundIndex}`).then(r => r.json());
+    const replayDataFromAPI = await fetch(`${API_BASE}/demos/${demoId}/rounds/${roundIndex}`).then(r => r.json());
 
     //const frames       = replayData.rounds[roundIndex];
     let frames = replayDataFromAPI.frames;
@@ -564,7 +397,7 @@ export async function init(demoId, demoMap, demoTickRate) {
 
     // Select round callback
     async function selectRound(roundIdx) {
-        const roundData = await fetch(`http://localhost:8080/demos/${demoId}/rounds/${roundIdx}`).then(r => r.json());
+        const roundData = await fetch(`${API_BASE}/demos/${demoId}/rounds/${roundIdx}`).then(r => r.json());
         frames = roundData.frames;
         events = roundData.events;
         snapshots = roundData.snapshots;
